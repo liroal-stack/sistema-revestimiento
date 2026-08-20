@@ -1804,9 +1804,23 @@ function renderTable() {
     }
   }
 
+  // Normalizar búsqueda: quita acentos y artículos cortos para búsqueda flexible
+  function normalizeSearch(str) {
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita acentos
+      .replace(/\bde\b|\bdel\b|\bla\b|\blas\b|\blos\b|\bel\b/g, '') // quita artículos
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  const searchNorm = normalizeSearch(search);
+
   const items = activeStock.filter(item => {
-    // Búsqueda por nombre — busca en toda la descripcion
-    const hit = item.descripcion.toLowerCase().includes(search) || item.codigo.toLowerCase().includes(search);
+    // Búsqueda normalizada — ignora "de", "del", acentos
+    const descNorm = normalizeSearch(item.descripcion);
+    const hit = search === '' ||
+      descNorm.includes(searchNorm) ||
+      item.descripcion.toLowerCase().includes(search) ||
+      item.codigo.toLowerCase().includes(search);
     if (!hit) return false;
 
     // Filtro por tipo (COLCHON / SOMMIER)
