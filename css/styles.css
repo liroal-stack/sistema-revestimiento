@@ -714,3 +714,39 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 }
 #pdfPreview { width: 100%; border: none; min-height: 500px; }
 
+/* ── LOGIN SCREEN ─────────────────────────────────────────────────────────── */
+.login-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.login-screen.hidden { display: none; }
+.login-box {
+  width: 100%; max-width: 380px;
+  animation: loginIn 0.4s ease;
+}
+@keyframes loginIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.login-logos {
+  display: flex; align-items: center; justify-content: center;
+  gap: 28px; margin-bottom: 32px; flex-wrap: wrap;
+}
+.login-logo { height: 64px; width: auto; object-fit: contain; }
+@media (max-width: 420px) { .login-logo { height: 48px; } }
+.login-form { display: flex; flex-direction: column; gap: 16px; }
+.login-error {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--red);
+  background: #FFF5F6; border: 1px solid #FFD3DA;
+  border-radius: 3px; padding: 10px 12px; text-align: center;
+}
+.login-btn {
+  width: 100%; justify-content: center; padding: 13px; font-size: 17px; margin-top: 4px;
+}
+
+/* LOGOUT BUTTON (header) */
+.btn-logout:hover { background: #FFF5F6; color: var(--red); }
+

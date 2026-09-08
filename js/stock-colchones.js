@@ -34,6 +34,7 @@ function getActiveProvName() {
 
 // ── MODULE / PROVIDER SWITCHING ───────────────────────────────────────────────
 async function switchModule(mod) {
+  if (!getPermissions().includes(mod)) return; // sin permiso para este módulo
   if (activeModule === mod) return;
   activeModule = mod;
 
