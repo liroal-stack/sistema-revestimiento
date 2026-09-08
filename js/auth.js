@@ -9,13 +9,13 @@ const AUTH_USERS = {
     // hash SHA-256 de "4321"
     hash: 'fe2592b42a727e977f055947385b709cc82b16b9a87f88c6abf3900d65d0cdc3',
     permisos: ['muebles'],
-    logo: 'logo_muebleria.jpg'
+    logo: 'logo_muebleria-transparent.png'
   },
   sergio: {
     // hash SHA-256 de "1234"
     hash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
     permisos: ['colchones', 'revestimientos', 'pedidos'],
-    logo: 'Logo-MM.png'
+    logo: 'Logo-MM-transparent.png'
   }
 };
 
