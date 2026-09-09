@@ -46,6 +46,10 @@ async function switchModule(mod) {
   document.getElementById('providerTabsMuebles').style.display = mod === 'muebles'        ? 'flex' : 'none';
   document.getElementById('providerTabsRev').style.display     = mod === 'revestimientos' ? 'flex' : 'none';
 
+  // Sub-navegación Stock/Ventas: solo existe dentro de Revestimientos
+  document.getElementById('revestSubtabs').style.display = mod === 'revestimientos' ? 'flex' : 'none';
+  if (mod !== 'revestimientos') document.getElementById('moduleVentas').style.display = 'none';
+
   // Mostrar/ocultar módulo pedidos vs inventario
   const isStock = ['colchones','muebles','revestimientos'].includes(mod);
   document.getElementById('modulePedidos').style.display  = mod === 'pedidos' ? '' : 'none';
@@ -66,6 +70,9 @@ async function switchModule(mod) {
     if (!stockMuebles[activeProveedor]) await loadMuebles(activeProveedor);
     else renderTable();
   } else if (mod === 'revestimientos') {
+    revestSubview = 'stock';
+    document.getElementById('subtabStock').classList.add('active');
+    document.getElementById('subtabVentas').classList.remove('active');
     if (!activeProveedorRev && proveedoresRev.length > 0) activeProveedorRev = proveedoresRev[0].nombre;
     if (activeProveedorRev && !stockRevestimientos[activeProveedorRev]) await loadRevestimientos(activeProveedorRev);
     else renderTable();

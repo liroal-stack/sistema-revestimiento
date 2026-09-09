@@ -56,6 +56,21 @@ async function seedRevestimientos() {
   stockRevestimientos['Saavedra y J.P. Lopez'] = await sbRequest('POST', '', rows, 'stock_revestimientos') || [];
 }
 
+// ── SUB-NAVEGACIÓN STOCK / VENTAS ─────────────────────────────────────────────
+let revestSubview = 'stock'; // 'stock' | 'ventas'
+
+function switchRevestSubview(view) {
+  if (activeModule !== 'revestimientos') return;
+  if (revestSubview === view) return;
+  revestSubview = view;
+  document.getElementById('subtabStock').classList.toggle('active', view === 'stock');
+  document.getElementById('subtabVentas').classList.toggle('active', view === 'ventas');
+  document.getElementById('moduleStock').style.display  = view === 'stock'  ? '' : 'none';
+  document.getElementById('moduleVentas').style.display = view === 'ventas' ? '' : 'none';
+  if (view === 'ventas') initVentas();
+  else renderTable();
+}
+
 async function syncCatalogoToStock() {
   // Solo colchones y sommiers del catálogo
   const aptos = catalogo.filter(a => a.tipo === 'colchon' || a.tipo === 'sommier');
