@@ -57,18 +57,36 @@ async function seedRevestimientos() {
 }
 
 // ── SUB-NAVEGACIÓN STOCK / VENTAS ─────────────────────────────────────────────
-let revestSubview = 'stock'; // 'stock' | 'ventas'
+let revestSubview = 'stock'; // 'stock' | 'ventas' — se recuerda mientras dure la sesión
+
+// Sincroniza el DOM (pestañas activas, secciones visibles + fade) con revestSubview
+// actual, sin cambiar su valor. Se usa tanto al hacer clic en una solapa como al
+// volver a entrar a Revestimientos desde otro módulo (para restaurar la sub-vista).
+function applyRevestSubview() {
+  const view = revestSubview;
+  document.getElementById('subtabStock').classList.toggle('active', view === 'stock');
+  document.getElementById('subtabVentas').classList.toggle('active', view === 'ventas');
+
+  const elStock  = document.getElementById('moduleStock');
+  const elVentas = document.getElementById('moduleVentas');
+  elStock.style.display  = view === 'stock'  ? '' : 'none';
+  elVentas.style.display = view === 'ventas' ? '' : 'none';
+
+  // Animación fade sutil al mostrar la sección activa
+  const shown = view === 'stock' ? elStock : elVentas;
+  shown.classList.remove('revest-fade-in');
+  void shown.offsetWidth; // fuerza reflow para poder reiniciar la animación
+  shown.classList.add('revest-fade-in');
+
+  if (view === 'ventas') initVentas();
+  else renderTable();
+}
 
 function switchRevestSubview(view) {
   if (activeModule !== 'revestimientos') return;
   if (revestSubview === view) return;
   revestSubview = view;
-  document.getElementById('subtabStock').classList.toggle('active', view === 'stock');
-  document.getElementById('subtabVentas').classList.toggle('active', view === 'ventas');
-  document.getElementById('moduleStock').style.display  = view === 'stock'  ? '' : 'none';
-  document.getElementById('moduleVentas').style.display = view === 'ventas' ? '' : 'none';
-  if (view === 'ventas') initVentas();
-  else renderTable();
+  applyRevestSubview();
 }
 
 async function syncCatalogoToStock() {

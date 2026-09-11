@@ -70,12 +70,10 @@ async function switchModule(mod) {
     if (!stockMuebles[activeProveedor]) await loadMuebles(activeProveedor);
     else renderTable();
   } else if (mod === 'revestimientos') {
-    revestSubview = 'stock';
-    document.getElementById('subtabStock').classList.add('active');
-    document.getElementById('subtabVentas').classList.remove('active');
     if (!activeProveedorRev && proveedoresRev.length > 0) activeProveedorRev = proveedoresRev[0].nombre;
     if (activeProveedorRev && !stockRevestimientos[activeProveedorRev]) await loadRevestimientos(activeProveedorRev);
-    else renderTable();
+    // Restaura la sub-vista (Stock o Ventas) en la que estaba el usuario antes de salir del módulo
+    applyRevestSubview();
   } else {
     renderTable();
   }
@@ -95,9 +93,12 @@ async function switchProveedor(modulo, nombre) {
   if (!stockObj[nombre]) {
     if (modulo === 'muebles') await loadMuebles(nombre);
     else await loadRevestimientos(nombre);
-  } else {
+  } else if (!(modulo === 'revestimientos' && revestSubview === 'ventas')) {
     renderTable();
   }
+  // Si se cambió de proveedor estando en la sub-vista Ventas, se permanece ahí
+  // mostrando el carrito y la lista de artículos del proveedor recién elegido.
+  if (modulo === 'revestimientos' && revestSubview === 'ventas') initVentas();
 }
 
 function updateSectionTitle() {

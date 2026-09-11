@@ -799,23 +799,38 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .btn-logout:hover { background: #FFF5F6; color: var(--red); }
 
 /* ── SUB-NAVEGACIÓN REVESTIMIENTOS: STOCK / VENTAS ───────────────────────────── */
-.revest-subtabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.revest-subtabs {
+  display: flex; gap: 8px; margin-bottom: 16px;
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: 24px; padding: 5px; box-shadow: var(--shadow-sm);
+  width: fit-content;
+}
 .revest-subtab {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 20px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 22px;
   font-family: var(--font-display);
   font-weight: 800; font-size: 13px;
   letter-spacing: 1px; text-transform: uppercase;
-  border: 1.5px solid var(--gray-200);
-  border-radius: 20px; background: var(--white);
+  border: none; border-radius: 20px; background: transparent;
   color: var(--gray-700); cursor: pointer;
-  transition: all 0.15s; touch-action: manipulation;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s; touch-action: manipulation;
 }
-.revest-subtab:hover { border-color: var(--gray-500); }
+.revest-subtab:hover:not(.active) { background: var(--gray-100); color: var(--gray-900); }
 .revest-subtab.active {
-  background: var(--red); color: var(--white); border-color: var(--red);
-  box-shadow: 0 2px 8px rgba(200,16,46,0.25);
+  background: var(--red); color: var(--white);
+  box-shadow: 0 2px 8px rgba(200,16,46,0.3);
 }
+@media (max-width: 640px) {
+  .revest-subtabs { width: 100%; }
+  .revest-subtab { flex: 1; padding: 11px 12px; font-size: 12.5px; }
+}
+
+/* Fade sutil al mostrar Stock o Ventas */
+@keyframes revestFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.revest-fade-in { animation: revestFadeIn 0.28s ease; }
 
 /* ── MÓDULO VENTAS ─────────────────────────────────────────────────────────────── */
 .ventas-chart-wrap {
