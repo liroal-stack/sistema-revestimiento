@@ -56,37 +56,49 @@ async function seedRevestimientos() {
   stockRevestimientos['Saavedra y J.P. Lopez'] = await sbRequest('POST', '', rows, 'stock_revestimientos') || [];
 }
 
-// ── SUB-NAVEGACIÓN STOCK / VENTAS ─────────────────────────────────────────────
-let revestSubview = 'stock'; // 'stock' | 'ventas' — se recuerda mientras dure la sesión
+// ── SUB-NAVEGACIÓN STOCK / VENTAS / PRECIOS ───────────────────────────────────
+let revestSubview = 'stock'; // 'stock' | 'ventas' | 'precios' — se recuerda mientras dure la sesión
+
+const REVEST_SUBVIEWS = {
+  stock:   { tabId: 'subtabStock',   moduleId: 'moduleStock' },
+  ventas:  { tabId: 'subtabVentas',  moduleId: 'moduleVentas' },
+  precios: { tabId: 'subtabPrecios', moduleId: 'moduleListaPrecios' }
+};
 
 // Sincroniza el DOM (pestañas activas, secciones visibles + fade) con revestSubview
 // actual, sin cambiar su valor. Se usa tanto al hacer clic en una solapa como al
 // volver a entrar a Revestimientos desde otro módulo (para restaurar la sub-vista).
-function applyRevestSubview() {
+// opts.preserveCart evita que initVentas() vacíe el carrito — lo usa el flujo
+// "Agregar a venta" de Lista de Precios, que agrega un ítem y salta a Ventas.
+function applyRevestSubview(opts) {
+  opts = opts || {};
   const view = revestSubview;
-  document.getElementById('subtabStock').classList.toggle('active', view === 'stock');
-  document.getElementById('subtabVentas').classList.toggle('active', view === 'ventas');
-
-  const elStock  = document.getElementById('moduleStock');
-  const elVentas = document.getElementById('moduleVentas');
-  elStock.style.display  = view === 'stock'  ? '' : 'none';
-  elVentas.style.display = view === 'ventas' ? '' : 'none';
+  let shown = null;
+  Object.entries(REVEST_SUBVIEWS).forEach(([key, cfg]) => {
+    const tab = document.getElementById(cfg.tabId);
+    const mod = document.getElementById(cfg.moduleId);
+    const active = key === view;
+    if (tab) tab.classList.toggle('active', active);
+    if (mod) { mod.style.display = active ? '' : 'none'; if (active) shown = mod; }
+  });
 
   // Animación fade sutil al mostrar la sección activa
-  const shown = view === 'stock' ? elStock : elVentas;
-  shown.classList.remove('revest-fade-in');
-  void shown.offsetWidth; // fuerza reflow para poder reiniciar la animación
-  shown.classList.add('revest-fade-in');
+  if (shown) {
+    shown.classList.remove('revest-fade-in');
+    void shown.offsetWidth; // fuerza reflow para poder reiniciar la animación
+    shown.classList.add('revest-fade-in');
+  }
 
-  if (view === 'ventas') initVentas();
+  if (view === 'ventas') initVentas(opts.preserveCart);
+  else if (view === 'precios') initListaPrecios();
   else renderTable();
 }
 
-function switchRevestSubview(view) {
+function switchRevestSubview(view, opts) {
   if (activeModule !== 'revestimientos') return;
   if (revestSubview === view) return;
   revestSubview = view;
-  applyRevestSubview();
+  applyRevestSubview(opts);
 }
 
 async function syncCatalogoToStock() {

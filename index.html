@@ -92,8 +92,9 @@
        siga visible y usable en ambas sub-secciones (Stock y Ventas) -->
   <div class="provider-tabs" id="providerTabsRev" style="display:none"></div>
 
-  <!-- SUB-NAVEGACIÓN REVESTIMIENTOS: STOCK / VENTAS — debajo de las solapas de
-       proveedores, encima del contenido; fija mientras se esté en Revestimientos -->
+  <!-- SUB-NAVEGACIÓN REVESTIMIENTOS: STOCK / VENTAS / PRECIOS — debajo de las
+       solapas de proveedores, encima del contenido; fija mientras se esté en
+       Revestimientos -->
   <div class="revest-subtabs" id="revestSubtabs" style="display:none">
     <button class="revest-subtab active" id="subtabStock" onclick="switchRevestSubview('stock')">
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
@@ -102,6 +103,10 @@
     <button class="revest-subtab" id="subtabVentas" onclick="switchRevestSubview('ventas')">
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
       Ventas
+    </button>
+    <button class="revest-subtab" id="subtabPrecios" onclick="switchRevestSubview('precios')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Precios
     </button>
   </div>
 
@@ -331,6 +336,44 @@
     </div>
 
   </div><!-- /moduleVentas -->
+
+  <!-- ══ MÓDULO LISTA DE PRECIOS (dentro de Revestimientos) ══════════════════════ -->
+  <div id="moduleListaPrecios" style="display:none;">
+
+    <div class="section-header">
+      <div class="section-title"><span>■</span>Lista de Precios</div>
+    </div>
+
+    <div class="precios-search-bar">
+      <div class="search-box precios-search-box">
+        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="preciosBuscar" placeholder="Buscar por código o descripción..." oninput="renderListaPreciosResultados()" autocomplete="off">
+      </div>
+      <select class="filter-select" id="preciosFiltroCategoria" onchange="renderListaPreciosResultados()">
+        <option value="all">Todas las categorías</option>
+      </select>
+    </div>
+
+    <div class="table-wrap precios-table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Categoría</th>
+              <th class="center">Stock</th>
+              <th>Precio</th>
+              <th class="center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="preciosResultadosBody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer" id="preciosResultadosFooter"></div>
+    </div>
+
+  </div><!-- /moduleListaPrecios -->
 
   <!-- ══ MÓDULO PEDIDOS ══════════════════════════════════════════════════════ -->
 <div id="modulePedidos" style="display:none;">
@@ -818,6 +861,7 @@
 <script src="js/stock-muebles.js"></script>
 <script src="js/stock-revestimientos.js"></script>
 <script src="js/ventas.js"></script>
+<script src="js/lista-precios.js"></script>
 <script src="js/pedidos.js"></script>
 <script src="js/ui.js"></script>
 <script>

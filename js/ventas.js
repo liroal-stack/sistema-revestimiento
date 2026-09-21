@@ -1,16 +1,28 @@
 // ── MÓDULO VENTAS (dentro de Revestimientos) ─────────────────────────────────
 // Vende artículos del stock del proveedor activo de Revestimientos, descuenta
 // stock automáticamente y guarda el historial en la tabla `ventas` de Supabase.
+//
+// El carrito admite dos tipos de ítem (distinguidos por `source` en la clave
+// "stock_<id>" / "precio_<id>", para no confundir ids de stock_revestimientos
+// con ids de lista_precios que podrían coincidir numéricamente):
+//   - source 'stock'  → viene del stock real, valida cantidad disponible y
+//                        descuenta stock_revestimientos al confirmar la venta.
+//   - source 'precio' → viene de la Lista de Precios sin tener stock cargado
+//                        (agregado desde js/lista-precios.js); se vende igual,
+//                        sin tope de cantidad ni descuento de stock.
 
-let carrito         = {};    // { stockId: { cantidad, codigo, descripcion, precio, stockDisponible } }
+let carrito         = {};    // { "stock_<id>"|"precio_<id>": { source, refId, cantidad, codigo, descripcion, precio, stockDisponible? } }
 let historialVentas  = [];
 let ventasCargadas  = false;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-async function initVentas() {
+// preserveCart=true evita vaciar el carrito: lo usa el flujo "Agregar a venta"
+// de Lista de Precios, que agrega un ítem al carrito y recién después cambia a
+// esta sub-vista (sin eso, este mismo init() borraría lo que se acaba de agregar).
+async function initVentas(preserveCart) {
   const buscar = document.getElementById('ventaBuscar');
   if (buscar) buscar.value = '';
-  carrito = {};
+  if (!preserveCart) carrito = {};
   renderCart();
   renderVentaArticulos();
 
@@ -51,7 +63,7 @@ function renderVentaArticulos() {
   }
 
   tbody.innerHTML = items.map(item => {
-    const enCarrito  = carrito[item.id]?.cantidad || 0;
+    const enCarrito  = carrito['stock_' + item.id]?.cantidad || 0;
     const disponible = item.cantidad;
     const sinStock   = disponible <= 0 || enCarrito >= disponible;
     const sinPrecio  = !item.precio;
@@ -83,10 +95,13 @@ function addToCart(id) {
 
   if (!item.precio) { showToast('Este artículo no tiene precio cargado', 'error'); return; }
 
-  const actual = carrito[id]?.cantidad || 0;
+  const key = 'stock_' + id;
+  const actual = carrito[key]?.cantidad || 0;
   if (actual + 1 > item.cantidad) { showToast('No hay más stock disponible de este artículo', 'error'); return; }
 
-  carrito[id] = {
+  carrito[key] = {
+    source: 'stock',
+    refId: id,
     cantidad: actual + 1,
     codigo: item.codigo,
     descripcion: item.descripcion,
@@ -97,12 +112,34 @@ function addToCart(id) {
   renderVentaArticulos();
 }
 
-function setCartQty(id, val) {
-  const entry = carrito[id];
+// Agrega un artículo que viene de la Lista de Precios y NO tiene stock cargado:
+// se vende igual (sin descontar stock, sin tope de cantidad). Lo llama
+// addPrecioToCart() en js/lista-precios.js cuando el artículo no está en stock.
+function addPrecioOnlyToCart(item) {
+  if (!item || !item.precio_con_iva) { showToast('Este artículo no tiene precio cargado', 'error'); return; }
+
+  const key = 'precio_' + item.id;
+  const actual = carrito[key]?.cantidad || 0;
+
+  carrito[key] = {
+    source: 'precio',
+    refId: item.id,
+    cantidad: actual + 1,
+    codigo: item.codigo,
+    descripcion: item.descripcion,
+    precio: item.precio_con_iva
+  };
+  renderCart();
+  renderVentaArticulos();
+  showToast(`${item.descripcion} agregado (sin stock)`, 'info');
+}
+
+function setCartQty(key, val) {
+  const entry = carrito[key];
   if (!entry) return;
   const n = parseInt(val);
-  if (isNaN(n) || n <= 0) { removeCartItem(id); return; }
-  if (n > entry.stockDisponible) {
+  if (isNaN(n) || n <= 0) { removeCartItem(key); return; }
+  if (entry.source === 'stock' && n > entry.stockDisponible) {
     showToast(`Máximo disponible: ${entry.stockDisponible}`, 'error');
     entry.cantidad = entry.stockDisponible;
   } else {
@@ -112,8 +149,8 @@ function setCartQty(id, val) {
   renderVentaArticulos();
 }
 
-function removeCartItem(id) {
-  delete carrito[id];
+function removeCartItem(key) {
+  delete carrito[key];
   renderCart();
   renderVentaArticulos();
 }
@@ -139,18 +176,23 @@ function renderCart() {
     return;
   }
 
-  wrap.innerHTML = ids.map(id => {
-    const it = carrito[id];
+  wrap.innerHTML = ids.map(key => {
+    const it = carrito[key];
     const subtotal = it.cantidad * it.precio;
+    const esPrecioOnly = it.source === 'precio';
+    const maxAttr = esPrecioOnly ? '' : `max="${it.stockDisponible}"`;
     return `<div class="cart-item">
       <div class="cart-item-info">
         <div class="cart-item-desc" title="${esc(it.descripcion)}">${esc(it.descripcion)}</div>
-        <div class="cart-item-meta">${esc(it.codigo || '—')} · ${formatPrecio(it.precio)} c/u</div>
+        <div class="cart-item-meta">
+          ${esc(it.codigo || '—')} · ${formatPrecio(it.precio)} c/u
+          ${esPrecioOnly ? '<span class="cart-item-sin-stock">sin stock</span>' : ''}
+        </div>
       </div>
-      <input type="number" class="cart-qty-input" value="${it.cantidad}" min="1" max="${it.stockDisponible}"
-        inputmode="numeric" onchange="setCartQty(${id}, this.value)">
+      <input type="number" class="cart-qty-input" value="${it.cantidad}" min="1" ${maxAttr}
+        inputmode="numeric" onchange="setCartQty('${key}', this.value)">
       <div class="cart-item-subtotal">${formatPrecio(subtotal)}</div>
-      <button class="cart-item-remove" onclick="removeCartItem(${id})" title="Quitar">✕</button>
+      <button class="cart-item-remove" onclick="removeCartItem('${key}')" title="Quitar">✕</button>
     </div>`;
   }).join('');
 
@@ -173,10 +215,13 @@ async function confirmarVenta() {
 
   const stock = stockRevestimientos[activeProveedorRev] || [];
 
-  // Revalidación defensiva por si el stock cambió desde que se armó el carrito
-  for (const id of ids) {
-    const it = carrito[id];
-    const stockItem = stock.find(s => s.id === Number(id));
+  // Revalidación defensiva por si el stock cambió desde que se armó el carrito.
+  // Los ítems 'precio' (sin stock, agregados desde la Lista de Precios) no tienen
+  // cantidad tope y no se revalidan contra stock_revestimientos.
+  for (const key of ids) {
+    const it = carrito[key];
+    if (it.source !== 'stock') continue;
+    const stockItem = stock.find(s => s.id === it.refId);
     if (!stockItem || it.cantidad > stockItem.cantidad) {
       showToast('El stock cambió, revisá el carrito antes de confirmar', 'error');
       renderVentaArticulos();
@@ -185,10 +230,11 @@ async function confirmarVenta() {
     }
   }
 
-  const items = ids.map(id => {
-    const it = carrito[id];
+  const items = ids.map(key => {
+    const it = carrito[key];
     return {
-      id: Number(id),
+      id: it.refId,
+      source: it.source,
       codigo: it.codigo,
       descripcion: it.descripcion,
       proveedor: activeProveedorRev,
@@ -204,7 +250,10 @@ async function confirmarVenta() {
     const inserted = await sbRequest('POST', '', { fecha: today(), items, total }, 'ventas');
     historialVentas.unshift(inserted[0]);
 
-    for (const item of items) {
+    // Solo se descuenta stock_revestimientos para los ítems que realmente vienen
+    // de stock (nunca para los 'precio', aunque su id numérico coincida con el
+    // de una fila de stock de otro proveedor).
+    for (const item of items.filter(i => i.source === 'stock')) {
       const idx = stock.findIndex(s => s.id === item.id);
       if (idx >= 0) {
         const nuevaCantidad = Math.max(0, stock[idx].cantidad - item.cantidad);

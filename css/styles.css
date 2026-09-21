@@ -857,6 +857,7 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 @media (max-width: 640px) {
   .ventas-articulos-scroll table { min-width: 0; }
   .ventas-historial-wrap table { min-width: 0; }
+  .precios-table-wrap table { min-width: 0; }
 }
 
 .ventas-articulos-scroll { max-height: 460px; overflow-y: auto; }
@@ -916,4 +917,47 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 
 /* Filtro de fecha del historial de ventas */
 .ventas-filtro-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+
+/* Badge "sin stock" dentro de un ítem del carrito (agregado desde Lista de Precios) */
+.cart-item-sin-stock {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--gray-500); background: var(--gray-100);
+  padding: 1px 6px; border-radius: 8px; margin-left: 6px;
+}
+
+/* ── LISTA DE PRECIOS ─────────────────────────────────────────────────────────── */
+.precios-search-bar {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: 4px; padding: 14px; margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+  position: sticky; top: 128px; z-index: 10;
+}
+.precios-search-box { flex: 2; min-width: 220px; }
+.precios-search-box input { font-size: 16px; padding: 12px 12px 12px 36px; font-weight: 500; }
+.precios-search-box .search-icon { left: 12px; }
+.precios-search-bar .filter-select { flex: 1; min-width: 180px; }
+@media (max-width: 640px) {
+  .precios-search-bar { position: static; padding: 12px; }
+}
+
+.precio-block { display: flex; gap: 18px; }
+.precio-item {
+  display: flex; align-items: baseline; gap: 6px;
+  font-family: var(--font-display); font-weight: 700; font-size: 14px;
+  color: var(--gray-900); white-space: nowrap;
+}
+.precio-tag {
+  font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 10px;
+  letter-spacing: 0.5px; text-transform: uppercase; color: var(--gray-500);
+}
+@media (max-width: 640px) {
+  .precio-block { flex-direction: column; gap: 2px; }
+}
+
+.precio-sin-stock {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--gray-500); background: var(--gray-100);
+  padding: 4px 9px; border-radius: 10px; white-space: nowrap;
+}
 

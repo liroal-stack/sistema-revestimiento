@@ -46,9 +46,12 @@ async function switchModule(mod) {
   document.getElementById('providerTabsMuebles').style.display = mod === 'muebles'        ? 'flex' : 'none';
   document.getElementById('providerTabsRev').style.display     = mod === 'revestimientos' ? 'flex' : 'none';
 
-  // Sub-navegación Stock/Ventas: solo existe dentro de Revestimientos
+  // Sub-navegación Stock/Ventas/Precios: solo existe dentro de Revestimientos
   document.getElementById('revestSubtabs').style.display = mod === 'revestimientos' ? 'flex' : 'none';
-  if (mod !== 'revestimientos') document.getElementById('moduleVentas').style.display = 'none';
+  if (mod !== 'revestimientos') {
+    document.getElementById('moduleVentas').style.display = 'none';
+    document.getElementById('moduleListaPrecios').style.display = 'none';
+  }
 
   // Mostrar/ocultar módulo pedidos vs inventario
   const isStock = ['colchones','muebles','revestimientos'].includes(mod);
@@ -72,7 +75,7 @@ async function switchModule(mod) {
   } else if (mod === 'revestimientos') {
     if (!activeProveedorRev && proveedoresRev.length > 0) activeProveedorRev = proveedoresRev[0].nombre;
     if (activeProveedorRev && !stockRevestimientos[activeProveedorRev]) await loadRevestimientos(activeProveedorRev);
-    // Restaura la sub-vista (Stock o Ventas) en la que estaba el usuario antes de salir del módulo
+    // Restaura la sub-vista (Stock, Ventas o Precios) en la que estaba el usuario antes de salir del módulo
     applyRevestSubview();
   } else {
     renderTable();
@@ -90,15 +93,18 @@ async function switchProveedor(modulo, nombre) {
   renderProviderTabs(modulo);
   updateSectionTitle();
   const stockObj = modulo === 'muebles' ? stockMuebles : stockRevestimientos;
+  const enVentasOPrecios = modulo === 'revestimientos' && (revestSubview === 'ventas' || revestSubview === 'precios');
   if (!stockObj[nombre]) {
     if (modulo === 'muebles') await loadMuebles(nombre);
     else await loadRevestimientos(nombre);
-  } else if (!(modulo === 'revestimientos' && revestSubview === 'ventas')) {
+  } else if (!enVentasOPrecios) {
     renderTable();
   }
-  // Si se cambió de proveedor estando en la sub-vista Ventas, se permanece ahí
-  // mostrando el carrito y la lista de artículos del proveedor recién elegido.
+  // Si se cambió de proveedor estando en Ventas o Precios, se permanece ahí: en
+  // Ventas se refresca el carrito con el stock del proveedor nuevo, y en Precios
+  // se refrescan los indicadores de stock de la lista (el proveedor activo cambió).
   if (modulo === 'revestimientos' && revestSubview === 'ventas') initVentas();
+  else if (modulo === 'revestimientos' && revestSubview === 'precios') renderListaPreciosResultados();
 }
 
 function updateSectionTitle() {
