@@ -89,6 +89,11 @@ function applyRevestSubview(opts) {
     shown.classList.add('revest-fade-in');
   }
 
+  // Solapas de proveedores: solo se muestran en la sub-vista Stock, con
+  // colapso animado (ver .revest-provider-collapsed en css/styles.css)
+  const provTabs = document.getElementById('providerTabsRev');
+  if (provTabs) provTabs.classList.toggle('revest-provider-collapsed', view !== 'stock');
+
   if (view === 'ventas') initVentas(opts.preserveCart);
   else if (view === 'precios') initListaPrecios();
   else renderTable();

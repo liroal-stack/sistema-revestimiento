@@ -529,6 +529,18 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   padding: 8px;
   margin-bottom: 12px;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  max-height: 120px; opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease,
+              padding-top 0.25s ease, padding-bottom 0.25s ease,
+              border-width 0.25s ease, border-color 0.2s ease;
+}
+/* Colapso suave (en vez de display:none) para las solapas de proveedores de
+   Revestimientos: solo se muestran en la sub-vista Stock. */
+.provider-tabs.revest-provider-collapsed {
+  max-height: 0; opacity: 0;
+  margin-bottom: 0; padding-top: 0; padding-bottom: 0;
+  border-width: 0; border-color: transparent; box-shadow: none;
 }
 .prov-tab {
   padding: 9px 18px;

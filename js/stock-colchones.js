@@ -43,14 +43,18 @@ async function switchModule(mod) {
   document.getElementById('tabRevestimientos').classList.toggle('active', mod === 'revestimientos');
   document.getElementById('tabPedidos').classList.toggle('active',        mod === 'pedidos');
 
-  document.getElementById('providerTabsMuebles').style.display = mod === 'muebles'        ? 'flex' : 'none';
-  document.getElementById('providerTabsRev').style.display     = mod === 'revestimientos' ? 'flex' : 'none';
+  document.getElementById('providerTabsMuebles').style.display = mod === 'muebles' ? 'flex' : 'none';
 
-  // Sub-navegación Stock/Ventas/Precios: solo existe dentro de Revestimientos
+  // Sub-navegación Stock/Ventas/Precios: solo existe dentro de Revestimientos.
+  // Las solapas de proveedores de Revestimientos ahora viven debajo de esa
+  // sub-navegación y su visibilidad la controla applyRevestSubview() según la
+  // sub-vista activa (solo se muestran en Stock) — acá solo se colapsan al
+  // salir del módulo por completo.
   document.getElementById('revestSubtabs').style.display = mod === 'revestimientos' ? 'flex' : 'none';
   if (mod !== 'revestimientos') {
     document.getElementById('moduleVentas').style.display = 'none';
     document.getElementById('moduleListaPrecios').style.display = 'none';
+    document.getElementById('providerTabsRev').classList.add('revest-provider-collapsed');
   }
 
   // Mostrar/ocultar módulo pedidos vs inventario
