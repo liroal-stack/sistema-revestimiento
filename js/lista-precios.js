@@ -7,6 +7,55 @@
 let listaPrecios        = [];
 let listaPreciosCargada = false;
 
+// ── FUENTES DE LA LISTA DE PRECIOS ────────────────────────────────────────────
+// Todos los artículos de lista_precios se traen en una sola consulta (son pocos)
+// y cada "fuente" es simplemente un filtro sobre ese array, según el proveedor
+// (u otro campo, si hiciera falta) que corresponda a ese catálogo. Para sumar
+// una lista nueva en el futuro alcanza con agregar un objeto acá — la pestaña,
+// el filtro de categorías y los resultados se arman solos a partir de esto.
+const LISTA_PRECIOS_FUENTES = [
+  {
+    id: 'ccs',
+    nombreCorto: 'CCS',
+    nombreCompleto: 'Centro Construcción en Seco',
+    filtro: item => item.proveedor === 'Saavedra y J.P. Lopez'
+  }
+];
+
+let listaPreciosFuenteActiva = LISTA_PRECIOS_FUENTES[0]?.id || null;
+
+function getListaPreciosFuenteActiva() {
+  return LISTA_PRECIOS_FUENTES.find(f => f.id === listaPreciosFuenteActiva) || null;
+}
+
+// Artículos de listaPrecios que pertenecen a la fuente activa (o todos, si por
+// algún motivo no hay ninguna fuente configurada)
+function getItemsFuenteActiva() {
+  const fuente = getListaPreciosFuenteActiva();
+  return fuente ? listaPrecios.filter(fuente.filtro) : listaPrecios;
+}
+
+function renderListaPreciosFuenteTabs() {
+  const wrap = document.getElementById('preciosFuenteTabs');
+  if (!wrap) return;
+  wrap.innerHTML = LISTA_PRECIOS_FUENTES.map(f => `
+    <button class="precios-fuente-tab ${f.id === listaPreciosFuenteActiva ? 'active' : ''}"
+      onclick="switchListaPreciosFuente('${f.id}')" title="${esc(f.nombreCompleto)}">
+      <span class="precios-fuente-nombre">${esc(f.nombreCorto)}</span>
+      <span class="precios-fuente-subtitulo">${esc(f.nombreCompleto)}</span>
+    </button>`).join('');
+}
+
+function switchListaPreciosFuente(fuenteId) {
+  if (listaPreciosFuenteActiva === fuenteId) return;
+  listaPreciosFuenteActiva = fuenteId;
+  renderListaPreciosFuenteTabs();
+  const buscar = document.getElementById('preciosBuscar');
+  if (buscar) buscar.value = '';
+  poblarPreciosFiltroCategoria();
+  renderListaPreciosResultados();
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function initListaPrecios() {
   if (!listaPreciosCargada) {
@@ -22,13 +71,14 @@ async function initListaPrecios() {
       setLoading(false);
     }
   }
+  renderListaPreciosFuenteTabs();
   renderListaPreciosResultados();
 }
 
 function poblarPreciosFiltroCategoria() {
   const sel = document.getElementById('preciosFiltroCategoria');
   if (!sel) return;
-  const categorias = [...new Set(listaPrecios.map(i => i.categoria).filter(Boolean))]
+  const categorias = [...new Set(getItemsFuenteActiva().map(i => i.categoria).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'es'));
   const actual = sel.value;
   sel.innerHTML = '<option value="all">Todas las categorías</option>' +
@@ -60,7 +110,7 @@ function renderListaPreciosResultados() {
   const search     = normalizarBusquedaPrecios(searchRaw);
   const categoria  = document.getElementById('preciosFiltroCategoria')?.value || 'all';
 
-  let items = listaPrecios;
+  let items = getItemsFuenteActiva();
   if (categoria !== 'all') items = items.filter(i => i.categoria === categoria);
   if (search.length >= 2) {
     items = items.filter(i => {

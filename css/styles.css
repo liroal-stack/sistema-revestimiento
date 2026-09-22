@@ -938,6 +938,31 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .cart-item-badge-row { margin-top: 4px; }
 
 /* ── LISTA DE PRECIOS ─────────────────────────────────────────────────────────── */
+/* Pestañas de origen/proveedor de la lista de precios — estilo más compacto y
+   con subtítulo que las solapas de proveedores del módulo Stock (.provider-tabs),
+   para diferenciarlas visualmente aunque compartan la misma familia de diseño. */
+.precios-fuente-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.precios-fuente-tab {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 7px 14px;
+  background: var(--white); border: 1.5px solid var(--gray-200);
+  border-radius: 6px; cursor: pointer; transition: all 0.15s;
+  touch-action: manipulation; text-align: left;
+}
+.precios-fuente-tab:hover { border-color: var(--gray-500); background: var(--gray-50); }
+.precios-fuente-tab.active { border-color: var(--red); background: #FFF5F6; box-shadow: 0 0 0 1px var(--red); }
+.precios-fuente-nombre {
+  font-family: var(--font-display); font-weight: 900; font-size: 15px;
+  letter-spacing: 0.5px; color: var(--gray-700);
+}
+.precios-fuente-tab.active .precios-fuente-nombre { color: var(--red); }
+.precios-fuente-subtitulo { font-size: 10px; font-weight: 500; color: var(--gray-500); white-space: nowrap; }
+@media (max-width: 640px) {
+  .precios-fuente-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .precios-fuente-tab { flex-shrink: 0; }
+  .precios-fuente-subtitulo { max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+}
+
 .precios-search-bar {
   display: flex; gap: 10px; flex-wrap: wrap;
   background: var(--white); border: 1px solid var(--gray-200);
