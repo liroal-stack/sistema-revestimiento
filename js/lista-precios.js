@@ -84,7 +84,64 @@ function poblarPreciosFiltroCategoria() {
   sel.innerHTML = '<option value="all">Todas las categorías</option>' +
     categorias.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   sel.value = [...sel.options].some(o => o.value === actual) ? actual : 'all';
+  renderCategoriaDropdownList();
 }
+
+// ── DROPDOWN PERSONALIZADO DE CATEGORÍAS ──────────────────────────────────────
+// El <select> nativo #preciosFiltroCategoria sigue siendo la única fuente de
+// verdad del valor elegido (arriba lo rellena poblarPreciosFiltroCategoria());
+// esto es solo la capa visual/interactiva de filas alternadas encima. Elegir
+// una opción acá actualiza ese <select> y llama a renderListaPreciosResultados()
+// — lo mismo que dispararía su "onchange" si se usara directamente.
+
+// Reconstruye la lista de <li> a partir de las <option> del select oculto, y
+// resalta cuál está seleccionada. Se llama cada vez que cambian las categorías
+// disponibles (poblarPreciosFiltroCategoria) o cambia la selección.
+function renderCategoriaDropdownList() {
+  const nativeSel = document.getElementById('preciosFiltroCategoria');
+  const list = document.getElementById('preciosCategoriaList');
+  if (!nativeSel || !list) return;
+
+  list.innerHTML = [...nativeSel.options].map(opt => {
+    const seleccionada = opt.value === nativeSel.value;
+    return `<li class="precios-categoria-opt ${seleccionada ? 'selected' : ''}"
+        role="option" aria-selected="${seleccionada}"
+        onclick="seleccionarCategoria('${opt.value.replace(/'/g, "\\'")}')">
+        ${esc(opt.textContent)}
+      </li>`;
+  }).join('');
+
+  const label = document.getElementById('preciosCategoriaLabel');
+  const actual = [...nativeSel.options].find(o => o.value === nativeSel.value);
+  if (label) label.textContent = actual ? actual.textContent : 'Todas las categorías';
+}
+
+function toggleCategoriaDropdown(forzarCerrado) {
+  const dropdown = document.getElementById('preciosCategoriaDropdown');
+  const btn = document.getElementById('preciosCategoriaBtn');
+  if (!dropdown || !btn) return;
+  const abrir = forzarCerrado === true ? false : !dropdown.classList.contains('open');
+  dropdown.classList.toggle('open', abrir);
+  btn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+}
+
+function seleccionarCategoria(valor) {
+  const nativeSel = document.getElementById('preciosFiltroCategoria');
+  if (!nativeSel) return;
+  nativeSel.value = valor;
+  renderCategoriaDropdownList();
+  toggleCategoriaDropdown(true);
+  renderListaPreciosResultados();
+}
+
+// Cerrar el dropdown al tocar/clickear fuera de él (desktop y mobile: el touch
+// también dispara "click" en los navegadores)
+document.addEventListener('click', e => {
+  const dropdown = document.getElementById('preciosCategoriaDropdown');
+  if (dropdown && dropdown.classList.contains('open') && !dropdown.contains(e.target)) {
+    toggleCategoriaDropdown(true);
+  }
+});
 
 // Normaliza para búsqueda insensible a mayúsculas/minúsculas y acentos
 function normalizarBusquedaPrecios(str) {

@@ -973,7 +973,6 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .precios-search-box { flex: 2; min-width: 220px; }
 .precios-search-box input { font-size: 16px; padding: 12px 12px 12px 36px; font-weight: 500; }
 .precios-search-box .search-icon { left: 12px; }
-.precios-search-bar .filter-select { flex: 1; min-width: 180px; }
 @media (max-width: 640px) {
   .precios-search-bar { position: static; padding: 12px; }
 }
@@ -981,6 +980,59 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .precios-resultados-count {
   font-size: 13px; font-weight: 600; color: var(--gray-500);
   margin: -6px 0 12px 2px;
+}
+
+/* ── DROPDOWN PERSONALIZADO DE CATEGORÍAS (filas alternadas) ──────────────────
+   El <select> nativo #preciosFiltroCategoria queda oculto (.precios-categoria-
+   native-hidden) — sigue siendo la fuente de verdad del valor; ver
+   js/lista-precios.js para la lógica de apertura/selección. */
+.precios-categoria-dropdown { position: relative; flex: 1; min-width: 180px; }
+.precios-categoria-native-hidden { display: none; }
+
+.precios-categoria-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%;
+  border: 1.5px solid var(--gray-200); border-radius: 3px;
+  padding: 9px 10px 9px 12px; font-family: 'Barlow', sans-serif;
+  font-size: 14px; color: var(--gray-700); background: var(--gray-50);
+  outline: none; cursor: pointer; touch-action: manipulation;
+  transition: border-color 0.15s;
+}
+.precios-categoria-btn:hover { border-color: var(--gray-300); }
+.precios-categoria-dropdown.open .precios-categoria-btn { border-color: var(--red); }
+#preciosCategoriaLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.precios-categoria-caret { flex-shrink: 0; color: var(--gray-500); transition: transform 0.2s ease; }
+.precios-categoria-dropdown.open .precios-categoria-caret { transform: rotate(180deg); }
+
+.precios-categoria-list {
+  list-style: none; margin: 0; padding: 4px 0;
+  position: absolute; top: calc(100% + 6px); left: 0;
+  min-width: 100%; width: max-content; max-width: 320px;
+  max-height: 280px; overflow-y: auto;
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 50;
+  opacity: 0; visibility: hidden; transform: translateY(-6px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+}
+.precios-categoria-dropdown.open .precios-categoria-list {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+
+.precios-categoria-opt {
+  padding: 9px 14px; font-family: 'Barlow', sans-serif; font-size: 14px;
+  color: var(--gray-900); cursor: pointer; touch-action: manipulation;
+  transition: background 0.15s; white-space: nowrap;
+}
+.precios-categoria-opt:nth-child(odd)         { background: #FFFFFF; }
+.precios-categoria-opt:nth-child(even)        { background: #FFE8E8; }
+.precios-categoria-opt:nth-child(odd):hover   { background: #F5F5F5; }
+.precios-categoria-opt:nth-child(even):hover  { background: #FADADB; }
+.precios-categoria-opt.selected { color: var(--red); font-weight: 700; }
+
+@media (max-width: 640px) {
+  .precios-categoria-dropdown { min-width: 0; width: 100%; }
+  .precios-categoria-list { left: 0; right: 0; min-width: 0; width: auto; max-width: none; }
 }
 
 /* Resaltado de los términos buscados dentro de la descripción */

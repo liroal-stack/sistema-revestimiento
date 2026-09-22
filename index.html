@@ -353,9 +353,20 @@
         <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input type="text" id="preciosBuscar" placeholder="Buscar por código o descripción..." oninput="renderListaPreciosResultados()" autocomplete="off">
       </div>
-      <select class="filter-select" id="preciosFiltroCategoria" onchange="renderListaPreciosResultados()">
-        <option value="all">Todas las categorías</option>
-      </select>
+      <!-- Dropdown personalizado con filas alternadas — el <select> nativo de acá
+           abajo se mantiene como única fuente de verdad del valor elegido (oculto,
+           no se toca a mano); ver renderCategoriaDropdownList() en lista-precios.js -->
+      <div class="precios-categoria-dropdown" id="preciosCategoriaDropdown">
+        <button type="button" class="precios-categoria-btn" id="preciosCategoriaBtn"
+          onclick="toggleCategoriaDropdown()" aria-haspopup="listbox" aria-expanded="false">
+          <span id="preciosCategoriaLabel">Todas las categorías</span>
+          <svg class="precios-categoria-caret" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <ul class="precios-categoria-list" id="preciosCategoriaList" role="listbox"></ul>
+        <select class="precios-categoria-native-hidden" id="preciosFiltroCategoria" onchange="renderListaPreciosResultados()" tabindex="-1" aria-hidden="true">
+          <option value="all">Todas las categorías</option>
+        </select>
+      </div>
     </div>
 
     <div class="precios-resultados-count" id="preciosResultadosCount"></div>
