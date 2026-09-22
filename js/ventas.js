@@ -441,9 +441,14 @@ function renderHistorialVentas() {
         <td class="center">${(v.items || []).length}</td>
         <td><span class="td-precio">${formatPrecio(v.total)}</span></td>
         <td class="center">
-          <button class="btn btn-ghost btn-sm btn-icon" onclick="verDetalleVenta(${idx})" title="Ver detalle">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
+          <div class="actions-cell">
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="verDetalleVenta(${idx})" title="Ver detalle">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="btn btn-danger btn-sm btn-icon" onclick="openEliminarVenta(${idx})" title="Eliminar venta">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            </button>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -472,4 +477,39 @@ function verDetalleVenta(idx) {
       </table>
     </div>`;
   document.getElementById('ventaDetalleModal').classList.add('active');
+}
+
+// ── ELIMINAR VENTA ─────────────────────────────────────────────────────────────
+// Borra solo el registro histórico de la venta. A propósito NO restaura stock:
+// la venta ya descontó stock real en su momento (si correspondía) y deshacer
+// eso acá sería una operación distinta (y más riesgosa) que "borrar el registro".
+let ventaEliminarIdx = null;
+
+function openEliminarVenta(idx) {
+  const v = historialVentas[idx];
+  if (!v) return;
+  ventaEliminarIdx = idx;
+  document.getElementById('ventaEliminarModal').classList.add('active');
+}
+
+async function confirmEliminarVenta() {
+  const v = historialVentas[ventaEliminarIdx];
+  if (!v) { closeModal('ventaEliminarModal'); return; }
+
+  setLoading(true);
+  try {
+    await sbRequest('DELETE', `?id=eq.${v.id}`, null, 'ventas');
+    historialVentas.splice(ventaEliminarIdx, 1);
+    closeModal('ventaEliminarModal');
+    renderHistorialVentas();
+    updateVentasKPIs();
+    renderVentasChart();
+    showToast('Venta eliminada correctamente', 'success');
+  } catch(e) {
+    showToast('Error al eliminar la venta: ' + e.message, 'error');
+    console.error(e);
+  } finally {
+    setLoading(false);
+    ventaEliminarIdx = null;
+  }
 }
