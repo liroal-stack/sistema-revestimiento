@@ -978,6 +978,17 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   .precios-search-bar { position: static; padding: 12px; }
 }
 
+.precios-resultados-count {
+  font-size: 13px; font-weight: 600; color: var(--gray-500);
+  margin: -6px 0 12px 2px;
+}
+
+/* Resaltado de los términos buscados dentro de la descripción */
+.precio-highlight {
+  background: #FFF0F1; color: var(--red-dark); font-weight: 800;
+  border-radius: 2px; padding: 0 1px;
+}
+
 .precio-block { display: flex; gap: 18px; }
 .precio-item {
   display: flex; align-items: baseline; gap: 6px;

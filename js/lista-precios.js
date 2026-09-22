@@ -91,6 +91,60 @@ function normalizarBusquedaPrecios(str) {
   return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
 }
 
+// Misma normalización pero SIN trim: al no recortar espacios, cada carácter del
+// resultado queda en el mismo índice que en el string original (los acentos
+// precompuestos de una letra se decomponen a "letra base" + marca diacrítica,
+// y al quitar la marca vuelve a quedar 1 carácter — el largo no cambia). Eso es
+// lo que permite resaltarTerminos() ubicar las coincidencias en el texto original
+// sin tener que armar un mapa de índices aparte.
+function normalizarPreservandoIndices(str) {
+  return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Separa la búsqueda en palabras normalizadas, descartando las de 1 carácter
+// (no aportan significado y solo generarían ruido en los resultados).
+function tokenizarBusquedaPrecios(str) {
+  return normalizarBusquedaPrecios(str).split(/\s+/).filter(t => t.length >= 2);
+}
+
+// Envuelve en <mark> las coincidencias de `terminos` dentro de `texto`, sobre el
+// texto original (con sus acentos/mayúsculas tal cual), escapando todo el resto
+// para no introducir HTML. Si un término aparece varias veces, o dos términos se
+// superponen, los rangos se fusionan para no anidar/romper el marcado.
+function resaltarTerminos(texto, terminos) {
+  if (!terminos || !terminos.length) return esc(texto);
+  const normTexto = normalizarPreservandoIndices(texto);
+
+  const rangos = [];
+  terminos.forEach(t => {
+    let desde = 0;
+    let pos;
+    while ((pos = normTexto.indexOf(t, desde)) !== -1) {
+      rangos.push([pos, pos + t.length]);
+      desde = pos + 1;
+    }
+  });
+  if (!rangos.length) return esc(texto);
+
+  rangos.sort((a, b) => a[0] - b[0]);
+  const fusionados = [rangos[0]];
+  for (let i = 1; i < rangos.length; i++) {
+    const ultimo = fusionados[fusionados.length - 1];
+    if (rangos[i][0] <= ultimo[1]) ultimo[1] = Math.max(ultimo[1], rangos[i][1]);
+    else fusionados.push(rangos[i]);
+  }
+
+  let html = '';
+  let cursor = 0;
+  fusionados.forEach(([desde, hasta]) => {
+    html += esc(texto.slice(cursor, desde));
+    html += `<mark class="precio-highlight">${esc(texto.slice(desde, hasta))}</mark>`;
+    cursor = hasta;
+  });
+  html += esc(texto.slice(cursor));
+  return html;
+}
+
 // Busca coincidencia en el stock de revestimientos del proveedor activo, por
 // código o por descripción (mismo criterio que usa js/ventas.js).
 function buscarEnStock(codigo, descripcion) {
@@ -107,17 +161,35 @@ function renderListaPreciosResultados() {
   if (!tbody) return;
 
   const searchRaw  = document.getElementById('preciosBuscar')?.value || '';
-  const search     = normalizarBusquedaPrecios(searchRaw);
+  const terminos   = tokenizarBusquedaPrecios(searchRaw);
   const categoria  = document.getElementById('preciosFiltroCategoria')?.value || 'all';
 
   let items = getItemsFuenteActiva();
   if (categoria !== 'all') items = items.filter(i => i.categoria === categoria);
-  if (search.length >= 2) {
-    items = items.filter(i => {
-      const desc = normalizarBusquedaPrecios(i.descripcion);
-      const cod  = normalizarBusquedaPrecios(i.codigo);
-      return desc.includes(search) || cod.includes(search);
-    });
+
+  if (terminos.length) {
+    // Multi-término tipo AND: solo quedan los artículos cuya descripción o
+    // código contienen TODAS las palabras buscadas (no hace falta que estén
+    // juntas ni en orden). Entre los que quedan, se ordena por cantidad de
+    // términos coincidentes (en la práctica siempre = terminos.length, por el
+    // AND) y luego alfabéticamente por descripción.
+    items = items
+      .map(item => {
+        const haystack = normalizarPreservandoIndices(`${item.descripcion} ${item.codigo || ''}`);
+        const coincidencias = terminos.filter(t => haystack.includes(t)).length;
+        return { item, coincidencias };
+      })
+      .filter(x => x.coincidencias === terminos.length)
+      .sort((a, b) =>
+        b.coincidencias - a.coincidencias ||
+        a.item.descripcion.localeCompare(b.item.descripcion, 'es')
+      )
+      .map(x => x.item);
+  }
+
+  const contador = document.getElementById('preciosResultadosCount');
+  if (contador) {
+    contador.textContent = `${items.length} artículo${items.length === 1 ? '' : 's'} encontrado${items.length === 1 ? '' : 's'}`;
   }
 
   if (!items.length) {
@@ -134,7 +206,7 @@ function renderListaPreciosResultados() {
 
     return `<tr>
       <td data-label="Código"><span class="td-codigo">${esc(item.codigo || '—')}</span></td>
-      <td data-label="Descripción"><span class="td-desc">${esc(item.descripcion)}</span></td>
+      <td data-label="Descripción"><span class="td-desc">${resaltarTerminos(item.descripcion, terminos)}</span></td>
       <td data-label="Categoría"><span class="date-chip">${esc(item.categoria || '—')}</span></td>
       <td class="center" data-label="Stock">${stockCell}</td>
       <td data-label="Precio">
