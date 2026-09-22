@@ -4,12 +4,16 @@
 //
 // El carrito admite dos tipos de ítem (distinguidos por `source` en la clave
 // "stock_<id>" / "precio_<id>", para no confundir ids de stock_revestimientos
-// con ids de lista_precios que podrían coincidir numéricamente):
+// con ids de lista_precios que podrían coincidir numéricamente). Al confirmar
+// la venta, cada ítem se guarda en `ventas.items` con `con_stock: true/false`
+// para trazabilidad (ver esItemConStock()):
 //   - source 'stock'  → viene del stock real, valida cantidad disponible y
 //                        descuenta stock_revestimientos al confirmar la venta.
-//   - source 'precio' → viene de la Lista de Precios sin tener stock cargado
-//                        (agregado desde js/lista-precios.js); se vende igual,
-//                        sin tope de cantidad ni descuento de stock.
+//                        Se guarda como con_stock: true.
+//   - source 'precio' → viene de la Lista de Precios sin tener stock físico
+//                        cargado (agregado desde js/lista-precios.js); se
+//                        vende igual, sin tope de cantidad ni descuento de
+//                        stock. Se guarda como con_stock: false.
 
 let carrito         = {};    // { "stock_<id>"|"precio_<id>": { source, refId, cantidad, codigo, descripcion, precio, stockDisponible? } }
 let historialVentas  = [];
@@ -181,13 +185,14 @@ function renderCart() {
     const subtotal = it.cantidad * it.precio;
     const esPrecioOnly = it.source === 'precio';
     const maxAttr = esPrecioOnly ? '' : `max="${it.stockDisponible}"`;
+    const badge = esPrecioOnly
+      ? '<span class="badge-sin-stock-fisico">Sin stock físico</span>'
+      : `<span class="badge-con-stock">${it.stockDisponible} disponibles</span>`;
     return `<div class="cart-item">
       <div class="cart-item-info">
         <div class="cart-item-desc" title="${esc(it.descripcion)}">${esc(it.descripcion)}</div>
-        <div class="cart-item-meta">
-          ${esc(it.codigo || '—')} · ${formatPrecio(it.precio)} c/u
-          ${esPrecioOnly ? '<span class="cart-item-sin-stock">sin stock</span>' : ''}
-        </div>
+        <div class="cart-item-meta">${esc(it.codigo || '—')} · ${formatPrecio(it.precio)} c/u</div>
+        <div class="cart-item-badge-row">${badge}</div>
       </div>
       <input type="number" class="cart-qty-input" value="${it.cantidad}" min="1" ${maxAttr}
         inputmode="numeric" onchange="setCartQty('${key}', this.value)">
@@ -234,7 +239,7 @@ async function confirmarVenta() {
     const it = carrito[key];
     return {
       id: it.refId,
-      source: it.source,
+      con_stock: it.source === 'stock', // trazabilidad: si descontó stock_revestimientos o no
       codigo: it.codigo,
       descripcion: it.descripcion,
       proveedor: activeProveedorRev,
@@ -251,9 +256,9 @@ async function confirmarVenta() {
     historialVentas.unshift(inserted[0]);
 
     // Solo se descuenta stock_revestimientos para los ítems que realmente vienen
-    // de stock (nunca para los 'precio', aunque su id numérico coincida con el
-    // de una fila de stock de otro proveedor).
-    for (const item of items.filter(i => i.source === 'stock')) {
+    // de stock (nunca para los que no tienen stock físico, aunque su id numérico
+    // coincida con el de una fila de stock de otro proveedor).
+    for (const item of items.filter(i => i.con_stock)) {
       const idx = stock.findIndex(s => s.id === item.id);
       if (idx >= 0) {
         const nuevaCantidad = Math.max(0, stock[idx].cantidad - item.cantidad);
@@ -456,16 +461,33 @@ function renderHistorialVentas() {
   document.getElementById('historialVentasFooter').textContent = `${items.length} venta${items.length === 1 ? '' : 's'}`;
 }
 
+// Ventas guardadas antes de esta función no tienen `con_stock` (algunas ni
+// siquiera tienen el `source` de la versión anterior) — en ese caso se asume
+// que sí tenían stock físico, porque hasta entonces era la única opción posible.
+function esItemConStock(it) {
+  if (it.con_stock !== undefined) return !!it.con_stock;
+  if (it.source !== undefined) return it.source === 'stock';
+  return true;
+}
+
 function verDetalleVenta(idx) {
   const v = historialVentas[idx];
   if (!v) return;
-  const rows = (v.items || []).map(it => `
+  const rows = (v.items || []).map(it => {
+    const badge = esItemConStock(it)
+      ? '<span class="badge-con-stock">Con stock</span>'
+      : '<span class="badge-sin-stock-fisico">Sin stock físico</span>';
+    return `
     <tr>
-      <td><span class="td-desc" style="font-size:13px;">${esc(it.descripcion)}</span></td>
+      <td>
+        <span class="td-desc" style="font-size:13px;">${esc(it.descripcion)}</span>
+        <div style="margin-top:3px;">${badge}</div>
+      </td>
       <td class="center">${it.cantidad}</td>
       <td>${formatPrecio(it.precio)}</td>
       <td>${formatPrecio(it.subtotal)}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   document.getElementById('ventaDetalleBody').innerHTML = `
     <div class="form-info" style="margin-bottom:14px;">
       Venta del <strong>${formatDate(v.fecha)}</strong> — Total: <strong>${formatPrecio(v.total)}</strong>

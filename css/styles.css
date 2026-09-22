@@ -352,6 +352,9 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .badge-new    { background: #E8F5E9; color: #2E7D32; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
 .badge-sum    { background: #E3F2FD; color: #1565C0; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
 .badge-skip   { background: var(--gray-100); color: var(--gray-500); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+/* Indicadores de stock en el carrito de Ventas (ítems con stock vs. solo lista de precios) */
+.badge-con-stock       { background: #E8F5E9; color: #2E7D32; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+.badge-sin-stock-fisico { background: #E3F2FD; color: #2196F3; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
 .preview-check { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer; }
 .preview-qty-input {
   width: 54px; border: 1.5px solid var(--gray-200); border-radius: 3px;
@@ -930,12 +933,9 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 /* Filtro de fecha del historial de ventas */
 .ventas-filtro-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 
-/* Badge "sin stock" dentro de un ítem del carrito (agregado desde Lista de Precios) */
-.cart-item-sin-stock {
-  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-  text-transform: uppercase; color: var(--gray-500); background: var(--gray-100);
-  padding: 1px 6px; border-radius: 8px; margin-left: 6px;
-}
+/* Fila de indicador de stock dentro de un ítem del carrito (ver .badge-con-stock
+   y .badge-sin-stock-fisico más arriba, junto a .badge-new/.badge-sum) */
+.cart-item-badge-row { margin-top: 4px; }
 
 /* ── LISTA DE PRECIOS ─────────────────────────────────────────────────────────── */
 .precios-search-bar {
