@@ -989,6 +989,17 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   border-radius: 2px; padding: 0 1px;
 }
 
+/* Filas alternadas de la tabla de resultados. Selector con más especificidad
+   que las reglas genéricas de tabla/mobile-card (que solo usan tag+tag) para
+   que el alternado gane sin necesidad de !important, en desktop y en mobile.
+   Es puro CSS (:nth-child) — no requiere ningún cambio en JS: se recalcula
+   solo cada vez que se vuelve a pintar la tabla (búsqueda, categoría, carga). */
+.precios-table-wrap tbody tr:nth-child(odd)  { background: #FFFFFF; }
+.precios-table-wrap tbody tr:nth-child(even) { background: #FFE8E8; }
+.precios-table-wrap tbody tr { transition: background 0.15s; }
+.precios-table-wrap tbody tr:nth-child(odd):hover  { background: #F5F5F5; }
+.precios-table-wrap tbody tr:nth-child(even):hover { background: #FADADB; }
+
 .precio-block { display: flex; gap: 18px; }
 .precio-item {
   display: flex; align-items: baseline; gap: 6px;
