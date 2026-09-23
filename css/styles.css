@@ -163,6 +163,23 @@ tbody tr.no-stock  { background: #FFF5F5; }
 tbody tr.low-stock:hover { background: #FFF9C4; }
 tbody tr.no-stock:hover  { background: #FFEBEE; }
 
+/* Grupo Cajas / Unidades por Caja / Total Unidades — solo se pinta con AMT
+   Maderas activo (ver renderTable() en js/ui.js). El tinte va únicamente en
+   las celdas de datos, nunca en el <th> (que es negro con texto blanco en
+   toda la tabla), para no repetir el problema de contraste que tuvo la
+   tabla de Precios con las columnas USD/ARS. */
+.stock-td-unidades { background: #EEF3FA; }
+.stock-total-unidades { font-family: var(--font-display); font-weight: 900; color: var(--gray-900); }
+.stock-unidades-block { display: flex; flex-direction: column; gap: 3px; }
+.stock-unidades-item {
+  display: flex; align-items: baseline; gap: 6px;
+  font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--gray-900);
+}
+.stock-unidades-tag {
+  font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 10px;
+  letter-spacing: 0.5px; text-transform: uppercase; color: var(--gray-500);
+}
+
 /* MOBILE CARDS */
 @media (max-width: 640px) {
   .table-wrap { border: none; background: transparent; box-shadow: none; }
@@ -193,6 +210,14 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   .qty-display { min-width: 42px; height: 34px; font-size: 17px; }
   .actions-cell { gap: 8px; justify-content: flex-start; }
   .btn-icon { padding: 8px 11px; }
+  /* El grupo Cajas/Unidades queda con su propio "recuadro" clarito dentro de
+     la card: como los <td> normales no tienen padding propio en mobile (ver
+     "td { padding: 0 }" arriba), acá se lo damos y se compensa el ancho con
+     márgenes negativos a los costados para que el fondo llegue al mismo
+     borde que el resto de las filas, sin tocar el espaciado vertical entre
+     filas (que sigue viniendo de "td + td { margin-top: 11px }"). */
+  td.stock-td-unidades { padding: 7px 8px; margin-left: -8px; margin-right: -8px; border-radius: 6px; }
+  td.stock-td-unidades + td.stock-td-unidades { margin-top: 4px; }
 }
 
 /* TABLE FOOTER */

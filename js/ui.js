@@ -93,14 +93,21 @@ function renderTable() {
 
   // Mostrar columna precio solo en revestimientos
   const showPrecio = activeModule === 'revestimientos';
-  updateTableHeader(showPrecio);
+  // AMT Maderas es el único proveedor de Revestimientos que vende por caja:
+  // sus artículos tienen `unidades_por_caja` en Supabase y `cantidad`
+  // representa cajas, no unidades sueltas. El resto de los proveedores no usa
+  // ese campo (queda en 0 por defecto), así que las columnas extra de
+  // cajas/unidades solo se muestran acá — no hace falta tocar la consulta a
+  // Supabase, que ya trae `unidades_por_caja` para todos porque usa select=*.
+  const esAmtMaderas = activeModule === 'revestimientos' && activeProveedorRev === 'AMT Maderas';
+  updateTableHeader(showPrecio, esAmtMaderas);
 
-  const colspan = showPrecio ? 6 : 5;
+  const colspan = (showPrecio ? 6 : 5) + (esAmtMaderas ? 2 : 0);
 
   if (!items.length) {
     tbody.innerHTML = `<tr><td colspan="${colspan}"><div class="empty-state"><span class="icon">📦</span><p>No se encontraron artículos</p></div></td></tr>`;
   } else {
-    tbody.innerHTML = items.map(({ id, codigo, descripcion, cantidad, fecha, precio }) => {
+    tbody.innerHTML = items.map(({ id, codigo, descripcion, cantidad, fecha, precio, unidades_por_caja }) => {
       const qc  = cantidad > 2 ? 'ok' : cantidad > 0 ? 'low' : 'zero';
       const rc  = cantidad > 2 ? '' : cantidad > 0 ? 'low-stock' : 'no-stock';
       const fch = fecha ? formatDate(fecha) : '—';
@@ -121,19 +128,43 @@ function renderTable() {
         ? `<span class="td-precio ${!precio ? 'cero' : ''}">${precio ? formatPrecio(precio) : '— sin precio'}</span>`
         : '';
 
-      if (mobile) return `<tr class="${rc}">
+      // Total de unidades = cajas × unidades por caja, recalculado en cada
+      // render a partir del `cantidad` en memoria — así los botones +/- (que
+      // ya llaman a renderTable() después de actualizar `cantidad`) lo
+      // actualizan solos, sin pedir nada de nuevo a Supabase.
+      const totalUnidades = unidades_por_caja ? cantidad * unidades_por_caja : null;
+
+      if (mobile) {
+        const unidadesMobileCell = esAmtMaderas ? `
+        <td class="stock-td-unidades" data-label="Unid./Caja · Total">
+          <div class="stock-unidades-block">
+            <div class="stock-unidades-item"><span class="stock-unidades-tag">Unid./Caja</span>${unidades_por_caja || '—'}</div>
+            <div class="stock-unidades-item"><span class="stock-unidades-tag">Total</span><strong class="stock-total-unidades">${totalUnidades != null ? totalUnidades : '—'}</strong></div>
+          </div>
+        </td>` : '';
+
+        return `<tr class="${rc}">
         <td data-label="Código"><span class="td-codigo">${esc(codigo)}</span></td>
         <td data-label="Artículo"><span class="td-desc">${esc(descripcion)}</span></td>
-        <td data-label="Cantidad" class="center">${qty}</td>
+        <td data-label="${esAmtMaderas ? 'Cajas' : 'Cantidad'}" class="center ${esAmtMaderas ? 'stock-td-unidades' : ''}">${qty}</td>
+        ${unidadesMobileCell}
         ${showPrecio ? `<td data-label="Precio">${precioCell}</td>` : ''}
         <td data-label="Modificado"><span class="date-chip">${fch}</span></td>
         <td data-label="Acciones">${acts}</td>
       </tr>`;
+      }
+
+      const unidadesCajaCell = esAmtMaderas
+        ? `<td class="center stock-td-unidades" data-label="Unidades/Caja">${unidades_por_caja || '—'}</td>` : '';
+      const totalUnidadesCell = esAmtMaderas
+        ? `<td class="center stock-td-unidades" data-label="Total Unidades"><strong class="stock-total-unidades">${totalUnidades != null ? totalUnidades : '—'}</strong></td>` : '';
 
       return `<tr class="${rc}">
         <td><span class="td-codigo">${esc(codigo)}</span></td>
         <td><span class="td-desc">${esc(descripcion)}</span></td>
-        <td class="center">${qty}</td>
+        <td class="center ${esAmtMaderas ? 'stock-td-unidades' : ''}">${qty}</td>
+        ${unidadesCajaCell}
+        ${totalUnidadesCell}
         ${showPrecio ? `<td>${precioCell}</td>` : ''}
         <td><span class="date-chip">${fch}</span></td>
         <td class="center">${acts}</td>
@@ -146,13 +177,14 @@ function renderTable() {
 }
 
 
-function updateTableHeader(showPrecio) {
+function updateTableHeader(showPrecio, esAmtMaderas) {
   const thead = document.querySelector('#tableBody').closest('table').querySelector('thead tr');
   if (!thead) return;
   thead.innerHTML = `
     <th>Código</th>
     <th>Descripción</th>
-    <th class="center">Cantidad</th>
+    <th class="center">${esAmtMaderas ? 'Cajas' : 'Cantidad'}</th>
+    ${esAmtMaderas ? '<th class="center">Unidades/Caja</th><th class="center">Total Unidades</th>' : ''}
     ${showPrecio ? '<th>Precio Unit.</th>' : ''}
     <th>Últ. modificación</th>
     <th class="center">Acciones</th>`;
