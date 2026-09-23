@@ -62,10 +62,28 @@ function esItemEnDolares(item) {
   return /PVC/i.test(item.categoria || '');
 }
 
+// El "$ valor" grande del widget siempre refleja el tipo de cambio actualmente
+// aplicado a la tabla; el input de carga manual es un campo aparte (no se
+// autocompleta con la carga automática) para no pisarle al usuario lo que
+// esté escribiendo si la API tarda en responder.
+function formatearValorDolar(v) {
+  if (v == null) return '—';
+  return Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function actualizarValorDolarUI() {
+  const valorEl = document.getElementById('preciosDolarValor');
+  if (valorEl) valorEl.textContent = formatearValorDolar(dolarBNA);
+}
+
 function renderDolarWidget() {
   const widget = document.getElementById('preciosDolarWidget');
   if (!widget) return;
   widget.hidden = listaPreciosFuenteActiva !== 'xx';
+  if (!widget.hidden) {
+    actualizarValorDolarUI();
+    actualizarMetaDolar();
+  }
 }
 
 function actualizarMetaDolar(mensaje) {
@@ -73,12 +91,10 @@ function actualizarMetaDolar(mensaje) {
   if (!meta) return;
   if (mensaje) {
     meta.textContent = mensaje;
-    meta.classList.remove('precios-dolar-meta-error');
   } else if (dolarBNAUltimaActualizacion) {
     const hh = String(dolarBNAUltimaActualizacion.getHours()).padStart(2, '0');
     const mm = String(dolarBNAUltimaActualizacion.getMinutes()).padStart(2, '0');
     meta.textContent = `Última actualización: ${hh}:${mm} hs`;
-    meta.classList.remove('precios-dolar-meta-error');
   } else {
     meta.textContent = '';
   }
@@ -86,8 +102,7 @@ function actualizarMetaDolar(mensaje) {
 
 async function cargarDolarBNA() {
   dolarBNAIntentoAutoCarga = true;
-  const input = document.getElementById('preciosDolarInput');
-  const btn   = document.getElementById('preciosDolarActualizarBtn');
+  const btn = document.getElementById('preciosDolarActualizarBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Actualizando…'; }
   actualizarMetaDolar('Consultando BNA…');
 
@@ -107,12 +122,11 @@ async function cargarDolarBNA() {
 
     dolarBNA = venta;
     dolarBNAUltimaActualizacion = new Date();
-    if (input) input.value = venta.toFixed(2);
+    actualizarValorDolarUI();
     actualizarMetaDolar();
     renderListaPreciosResultados();
   } catch (e) {
     dolarBNAUltimaActualizacion = null;
-    if (input) input.placeholder = 'Ingresá el valor';
     actualizarMetaDolar('No se pudo obtener el valor automáticamente');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Actualizar desde BNA'; }
@@ -129,6 +143,7 @@ function aplicarDolarManual() {
   }
   dolarBNA = valor;
   dolarBNAUltimaActualizacion = null; // valor manual: no viene de la API
+  actualizarValorDolarUI();
   actualizarMetaDolar();
   renderListaPreciosResultados();
 }
@@ -354,12 +369,12 @@ function renderListaPreciosResultados() {
     contador.textContent = `${items.length} artículo${items.length === 1 ? '' : 's'} encontrado${items.length === 1 ? '' : 's'}`;
   }
 
-  const mostrarArs = listaPreciosFuenteActiva === 'xx';
+  const mostrarConversion = listaPreciosFuenteActiva === 'xx';
   const tableWrap = document.querySelector('.precios-table-wrap');
-  if (tableWrap) tableWrap.classList.toggle('mostrar-ars', mostrarArs);
+  if (tableWrap) tableWrap.classList.toggle('mostrar-ars', mostrarConversion);
 
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="${mostrarArs ? 6 : 5}"><div class="empty-state"><span class="icon">🔍</span><p>No se encontraron artículos para tu búsqueda</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${mostrarConversion ? 7 : 5}"><div class="empty-state"><span class="icon">🔍</span><p>No se encontraron artículos para tu búsqueda</p></div></td></tr>`;
     document.getElementById('preciosResultadosFooter').textContent = '';
     return;
   }
@@ -370,22 +385,39 @@ function renderListaPreciosResultados() {
       ? `<span class="qty-display ${stockItem.cantidad > 2 ? 'ok' : stockItem.cantidad > 0 ? 'low' : 'zero'}" style="cursor:default;">${stockItem.cantidad}</span>`
       : `<span class="precio-sin-stock">Sin stock</span>`;
 
-    let celdaArs = '';
-    if (mostrarArs) {
-      const enDolares = esItemEnDolares(item);
-      const montoArs = enDolares
-        ? (dolarBNA != null ? item.precio_sin_iva * dolarBNA : null)
-        : item.precio_sin_iva;
-      const badge = enDolares
-        ? '<span class="precio-moneda-badge usd">USD</span>'
-        : '<span class="precio-moneda-badge ars">ARS</span>';
-      celdaArs = `
-      <td class="precios-td-ars" data-label="Precio ARS">
+    // Columnas de conversión USD → ARS: solo con la pestaña XX activa. Los
+    // artículos "XX - PVC" (precio_sin_iva en USD) muestran las 3 columnas
+    // completas; los "XX - WPC" (ya en ARS) no necesitan conversión, así que
+    // ocupan colspan="2" con un único valor — la tabla "adapta" sus columnas
+    // según la categoría de cada fila en vez de repetir el mismo precio dos
+    // veces.
+    let celdasConversion = '';
+    if (mostrarConversion) {
+      if (esItemEnDolares(item)) {
+        const arsSinIva = dolarBNA != null ? item.precio_sin_iva * dolarBNA : null;
+        const arsConIva = dolarBNA != null ? item.precio_sin_iva * dolarBNA * 1.21 : null;
+        celdasConversion = `
+      <td class="precios-td-usd" data-label="Precio USD">
         <div class="precio-ars-block">
-          <span class="precio-ars-valor">${formatPrecio(montoArs)}</span>
-          ${badge}
+          <span class="precio-ars-valor">${formatPrecio(item.precio_sin_iva)}</span>
+          <span class="precio-moneda-badge usd">USD</span>
+        </div>
+      </td>
+      <td class="precios-td-ars" data-label="ARS">
+        <div class="precio-block">
+          <div class="precio-item"><span class="precio-tag">S/IVA</span>${formatPrecio(arsSinIva)}</div>
+          <div class="precio-item"><span class="precio-tag">C/IVA</span>${formatPrecio(arsConIva)}</div>
         </div>
       </td>`;
+      } else {
+        celdasConversion = `
+      <td class="precios-td-ars" colspan="2" data-label="Precio ARS">
+        <div class="precio-ars-block">
+          <span class="precio-ars-valor">${formatPrecio(item.precio_sin_iva)}</span>
+          <span class="precio-moneda-badge ars">ARS</span>
+        </div>
+      </td>`;
+      }
     }
 
     return `<tr>
@@ -398,7 +430,7 @@ function renderListaPreciosResultados() {
           <div class="precio-item"><span class="precio-tag">S/IVA</span>${formatPrecio(item.precio_sin_iva)}</div>
           <div class="precio-item"><span class="precio-tag">C/IVA</span>${formatPrecio(item.precio_con_iva)}</div>
         </div>
-      </td>${celdaArs}
+      </td>${celdasConversion}
     </tr>`;
   }).join('');
 
