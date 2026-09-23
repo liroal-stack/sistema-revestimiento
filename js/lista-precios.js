@@ -251,7 +251,7 @@ function renderListaPreciosResultados() {
   }
 
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="icon">🔍</span><p>No se encontraron artículos para tu búsqueda</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">🔍</span><p>No se encontraron artículos para tu búsqueda</p></div></td></tr>`;
     document.getElementById('preciosResultadosFooter').textContent = '';
     return;
   }
@@ -272,13 +272,6 @@ function renderListaPreciosResultados() {
           <div class="precio-item"><span class="precio-tag">S/IVA</span>${formatPrecio(item.precio_sin_iva)}</div>
           <div class="precio-item"><span class="precio-tag">C/IVA</span>${formatPrecio(item.precio_con_iva)}</div>
         </div>
-      </td>
-      <td class="center" data-label="Acciones">
-        <button class="btn btn-primary btn-sm" onclick="addPrecioToCart(${item.id})"
-          title="${stockItem ? 'Agregar a la venta' : 'Agregar a la venta (no descuenta stock)'}">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Agregar
-        </button>
       </td>
     </tr>`;
   }).join('');
