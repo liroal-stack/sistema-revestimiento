@@ -19,6 +19,12 @@ const LISTA_PRECIOS_FUENTES = [
     nombreCorto: 'CCS',
     nombreCompleto: 'Centro Construcción en Seco',
     filtro: item => item.proveedor === 'CCS'
+  },
+  {
+    id: 'atm',
+    nombreCorto: 'ATM',
+    nombreCompleto: 'MAXIPLACAS (ATM Maderas)',
+    filtro: item => item.proveedor === 'MAXIPLACAS (ATM MADERAS)'
   }
 ];
 
