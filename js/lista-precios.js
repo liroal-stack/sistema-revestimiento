@@ -25,6 +25,12 @@ const LISTA_PRECIOS_FUENTES = [
     nombreCorto: 'ATM',
     nombreCompleto: 'MAXIPLACAS (ATM Maderas)',
     filtro: item => item.proveedor === 'MAXIPLACAS (ATM MADERAS)'
+  },
+  {
+    id: 'xx',
+    nombreCorto: 'XX',
+    nombreCompleto: 'Proveedor XX',
+    filtro: item => item.proveedor === 'XX'
   }
 ];
 
