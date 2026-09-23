@@ -1072,3 +1072,63 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   padding: 4px 9px; border-radius: 10px; white-space: nowrap;
 }
 
+/* Columna "Precio ARS" — solo existe en el DOM de una fila cuando la pestaña
+   activa es "xx" (ver renderListaPreciosResultados()); el <th> siempre está en
+   el HTML pero se oculta salvo que .precios-table-wrap tenga .mostrar-ars, para
+   que el colspan del estado vacío y el ancho de columnas coincidan sin tener
+   que reescribir el <thead> a mano en cada cambio de pestaña. */
+.precios-th-ars, .precios-td-ars { display: none; }
+.precios-table-wrap.mostrar-ars .precios-th-ars,
+.precios-table-wrap.mostrar-ars .precios-td-ars { display: table-cell; }
+@media (max-width: 640px) {
+  .precios-table-wrap.mostrar-ars .precios-td-ars { display: flex; }
+}
+
+.precio-ars-block { display: flex; align-items: center; gap: 8px; }
+.precio-ars-valor {
+  font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--gray-900);
+  white-space: nowrap;
+}
+.precio-moneda-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 2px 7px; border-radius: 10px; white-space: nowrap;
+}
+.precio-moneda-badge.usd { background: #E3F2FD; color: #2196F3; }
+.precio-moneda-badge.ars { background: #E8F5E9; color: #2E7D32; }
+
+/* ── WIDGET CONVERSOR DE DÓLAR (pestaña "XX") ─────────────────────────────── */
+.precios-dolar-widget {
+  display: flex; align-items: center; gap: 18px;
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  padding: 14px 18px; margin-bottom: 14px;
+}
+.precios-dolar-icono { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.precios-dolar-cuerpo { flex: 1; min-width: 0; }
+.precios-dolar-titulo {
+  font-family: var(--font-display); font-weight: 800; font-size: 12px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--gray-500);
+  margin-bottom: 2px;
+}
+.precios-dolar-valor-row { display: flex; align-items: center; gap: 4px; }
+.precios-dolar-signo {
+  font-family: var(--font-display); font-weight: 900; font-size: 22px; color: var(--gray-900);
+}
+.precios-dolar-input {
+  border: none; border-bottom: 2px solid var(--gray-200); background: transparent;
+  font-family: var(--font-display); font-weight: 900; font-size: 22px; color: var(--gray-900);
+  padding: 2px 4px; width: 130px; outline: none; transition: border-color 0.15s;
+}
+.precios-dolar-input:focus { border-color: var(--red); }
+.precios-dolar-input::placeholder { font-size: 14px; font-weight: 500; color: var(--gray-500); }
+.precios-dolar-meta { font-size: 11.5px; color: var(--gray-500); margin-top: 2px; min-height: 15px; }
+.precios-dolar-acciones { display: flex; gap: 8px; flex-shrink: 0; }
+.precios-dolar-acciones .btn:disabled { opacity: 0.6; cursor: default; }
+@media (max-width: 640px) {
+  .precios-dolar-widget { flex-direction: column; align-items: stretch; gap: 10px; }
+  .precios-dolar-icono { display: none; }
+  .precios-dolar-input { width: 100%; }
+  .precios-dolar-acciones { flex-direction: column; }
+  .precios-dolar-acciones .btn { width: 100%; }
+}
+

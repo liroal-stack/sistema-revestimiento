@@ -371,6 +371,27 @@
 
     <div class="precios-resultados-count" id="preciosResultadosCount"></div>
 
+    <!-- Conversor de dólar — solo se muestra con la pestaña "XX" activa (la
+         columna "XX - PVC" tiene precio_sin_iva en USD); ver renderDolarWidget()
+         y cargarDolarBNA() en js/lista-precios.js. Vista pura: nunca escribe
+         nada a Supabase. -->
+    <div class="precios-dolar-widget" id="preciosDolarWidget" hidden>
+      <div class="precios-dolar-icono" aria-hidden="true">💵</div>
+      <div class="precios-dolar-cuerpo">
+        <div class="precios-dolar-titulo">Dólar BNA</div>
+        <div class="precios-dolar-valor-row">
+          <span class="precios-dolar-signo">$</span>
+          <input type="text" inputmode="decimal" id="preciosDolarInput" class="precios-dolar-input"
+            placeholder="Ingresá el valor" onkeydown="if(event.key==='Enter'){event.preventDefault();aplicarDolarManual();}">
+        </div>
+        <div class="precios-dolar-meta" id="preciosDolarMeta"></div>
+      </div>
+      <div class="precios-dolar-acciones">
+        <button type="button" class="btn btn-secondary btn-sm" id="preciosDolarActualizarBtn" onclick="cargarDolarBNA()">Actualizar desde BNA</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="aplicarDolarManual()">Aplicar</button>
+      </div>
+    </div>
+
     <div class="table-wrap precios-table-wrap">
       <div class="table-scroll">
         <table>
@@ -381,6 +402,7 @@
               <th>Categoría</th>
               <th class="center">Stock</th>
               <th>Precio</th>
+              <th class="precios-th-ars">Precio ARS</th>
             </tr>
           </thead>
           <tbody id="preciosResultadosBody"></tbody>
