@@ -18,7 +18,7 @@ const LISTA_PRECIOS_FUENTES = [
     id: 'ccs',
     nombreCorto: 'CCS',
     nombreCompleto: 'Centro Construcción en Seco',
-    filtro: item => item.proveedor === 'Saavedra y J.P. Lopez'
+    filtro: item => item.proveedor === 'CCS'
   }
 ];
 
@@ -62,6 +62,7 @@ async function initListaPrecios() {
     setLoading(true);
     try {
       listaPrecios = await sbRequest('GET', '?select=*&order=categoria.asc,descripcion.asc', null, 'lista_precios') || [];
+      console.log(`[lista-precios] Supabase devolvió ${listaPrecios.length} registros de lista_precios`);
       listaPreciosCargada = true;
       poblarPreciosFiltroCategoria();
     } catch(e) {
