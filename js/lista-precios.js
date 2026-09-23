@@ -27,10 +27,10 @@ const LISTA_PRECIOS_FUENTES = [
     filtro: item => item.proveedor === 'MAXIPLACAS (ATM MADERAS)'
   },
   {
-    id: 'xx',
-    nombreCorto: 'XX',
-    nombreCompleto: 'Proveedor XX',
-    filtro: item => item.proveedor === 'XX'
+    id: 'crev',
+    nombreCorto: 'CREV',
+    nombreCompleto: 'Cordoba Revestimiento',
+    filtro: item => item.proveedor === 'Cordoba Revestimiento'
   }
 ];
 
@@ -47,10 +47,11 @@ function getItemsFuenteActiva() {
   return fuente ? listaPrecios.filter(fuente.filtro) : listaPrecios;
 }
 
-// ── CONVERSOR DE DÓLAR (solo pestaña "xx") ────────────────────────────────────
-// Los artículos de la categoría "XX - PVC" vienen con precio_sin_iva en USD;
-// el resto de las fuentes (CCS, ATM, y "XX - WPC") ya está en ARS. Esto es
-// puramente una conversión de vista: nunca se escribe nada a Supabase.
+// ── CONVERSOR DE DÓLAR (solo pestaña "crev") ──────────────────────────────────
+// Los artículos de la categoría "Cordoba Revestimiento - PVC" vienen con
+// precio_sin_iva en USD; el resto de las fuentes (CCS, ATM, y "Cordoba
+// Revestimiento - WPC") ya está en ARS. Esto es puramente una conversión de
+// vista: nunca se escribe nada a Supabase.
 const DOLAR_BNA_API_URL     = 'https://dolarapi.com/v1/dolares/oficial';
 const DOLAR_BNA_TIMEOUT_MS  = 5000;
 
@@ -59,7 +60,7 @@ let dolarBNAUltimaActualizacion = null;  // Date de la última carga EXITOSA des
 let dolarBNAIntentoAutoCarga  = false; // evita reintentar solo la API cada vez que se vuelve a la pestaña
 
 function esItemEnDolares(item) {
-  return /PVC/i.test(item.categoria || '');
+  return (item.categoria || '').includes('Cordoba Revestimiento - PVC');
 }
 
 // El "$ valor" grande del widget siempre refleja el tipo de cambio actualmente
@@ -79,7 +80,7 @@ function actualizarValorDolarUI() {
 function renderDolarWidget() {
   const widget = document.getElementById('preciosDolarWidget');
   if (!widget) return;
-  widget.hidden = listaPreciosFuenteActiva !== 'xx';
+  widget.hidden = listaPreciosFuenteActiva !== 'crev';
   if (!widget.hidden) {
     actualizarValorDolarUI();
     actualizarMetaDolar();
@@ -169,7 +170,7 @@ function switchListaPreciosFuente(fuenteId) {
   renderDolarWidget();
   renderListaPreciosResultados();
 
-  if (fuenteId === 'xx' && dolarBNA === null && !dolarBNAIntentoAutoCarga) {
+  if (fuenteId === 'crev' && dolarBNA === null && !dolarBNAIntentoAutoCarga) {
     cargarDolarBNA();
   }
 }
@@ -369,7 +370,7 @@ function renderListaPreciosResultados() {
     contador.textContent = `${items.length} artículo${items.length === 1 ? '' : 's'} encontrado${items.length === 1 ? '' : 's'}`;
   }
 
-  const mostrarConversion = listaPreciosFuenteActiva === 'xx';
+  const mostrarConversion = listaPreciosFuenteActiva === 'crev';
   const tableWrap = document.querySelector('.precios-table-wrap');
   if (tableWrap) tableWrap.classList.toggle('mostrar-ars', mostrarConversion);
 
@@ -385,12 +386,12 @@ function renderListaPreciosResultados() {
       ? `<span class="qty-display ${stockItem.cantidad > 2 ? 'ok' : stockItem.cantidad > 0 ? 'low' : 'zero'}" style="cursor:default;">${stockItem.cantidad}</span>`
       : `<span class="precio-sin-stock">Sin stock</span>`;
 
-    // Columnas de conversión USD → ARS: solo con la pestaña XX activa. Los
-    // artículos "XX - PVC" (precio_sin_iva en USD) muestran las 3 columnas
-    // completas; los "XX - WPC" (ya en ARS) no necesitan conversión, así que
-    // ocupan colspan="2" con un único valor — la tabla "adapta" sus columnas
-    // según la categoría de cada fila en vez de repetir el mismo precio dos
-    // veces.
+    // Columnas de conversión USD → ARS: solo con la pestaña CREV activa. Los
+    // artículos "Cordoba Revestimiento - PVC" (precio_sin_iva en USD) muestran
+    // las columnas completas; los "Cordoba Revestimiento - WPC" (ya en ARS) no
+    // necesitan conversión, así que ocupan colspan="2" con un único valor — la
+    // tabla "adapta" sus columnas según la categoría de cada fila en vez de
+    // repetir el mismo precio dos veces.
     let celdasConversion = '';
     if (mostrarConversion) {
       if (esItemEnDolares(item)) {

@@ -1073,13 +1073,14 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 }
 
 /* Columnas de conversión USD → ARS — solo existen en el DOM de una fila cuando
-   la pestaña activa es "xx" (ver renderListaPreciosResultados()); los <th>
+   la pestaña activa es "crev" (ver renderListaPreciosResultados()); los <th>
    siempre están en el HTML pero se ocultan salvo que .precios-table-wrap tenga
    .mostrar-ars, para que el colspan del estado vacío y el ancho de columnas
    coincidan sin tener que reescribir el <thead> a mano en cada cambio de
-   pestaña. "Precio USD" es el valor de origen (categoría "XX - PVC"); "ARS" es
-   el resultado convertido — para los artículos "XX - WPC" (que ya están en
-   pesos y no necesitan conversión) esta segunda columna ocupa colspan="2" y
+   pestaña. "Precio USD" es el valor de origen (categoría "Cordoba Revestimiento
+   - PVC"); "ARS" es el resultado convertido — para los artículos "Cordoba
+   Revestimiento - WPC" (que ya están en pesos y no necesitan conversión) esta
+   segunda columna ocupa colspan="2" y
    muestra un único valor con badge ARS, sin columna USD por fila — así la
    tabla "adapta sus columnas" según la
    categoría del artículo sin duplicar información. Dentro de "ARS", S/IVA y
@@ -1115,7 +1116,7 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .precio-moneda-badge.usd { background: #E3F2FD; color: #1565C0; }
 .precio-moneda-badge.ars { background: #E8F5E9; color: #2E7D32; }
 
-/* ── WIDGET CONVERSOR DE DÓLAR (pestaña "XX") ─────────────────────────────── */
+/* ── WIDGET CONVERSOR DE DÓLAR (pestaña "CREV") ────────────────────────────── */
 /* Valor mostrado ($ grande en rojo) e input de carga manual son dos campos
    separados a propósito: el primero siempre refleja el tipo de cambio
    ACTUALMENTE aplicado a la tabla (venga de la API o de una carga manual
