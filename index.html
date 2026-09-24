@@ -82,6 +82,11 @@
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
     Pedidos
   </button>
+  <!-- Solo visible para usuarios con permiso "historial" (ver AUTH_USERS en js/auth.js) -->
+  <button class="module-tab" id="tabHistorial" style="display:none" onclick="switchModule('historial')">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Historial
+  </button>
 </div>
 <div style="height: 116px;"></div>
 
@@ -419,6 +424,86 @@
     </div>
 
   </div><!-- /moduleListaPrecios -->
+
+  <!-- ══ MÓDULO HISTORIAL (auditoría, solo lectura) ══════════════════════════ -->
+  <div id="moduleHistorial" style="display:none;">
+
+    <div class="section-header">
+      <div class="section-title"><span>■</span>Historial de Auditoría</div>
+    </div>
+
+    <div class="audit-filters">
+      <div class="audit-field">
+        <label class="audit-label" for="auditPeriodo">Período</label>
+        <select class="filter-select" id="auditPeriodo" onchange="onAuditPeriodoChange()">
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+          <option value="mes">Este mes</option>
+          <option value="rango">Rango personalizado</option>
+        </select>
+      </div>
+      <div class="audit-rango" id="auditRango" style="display:none;">
+        <div class="audit-field">
+          <label class="audit-label" for="auditDesde">Desde</label>
+          <input type="date" id="auditDesde" class="form-control audit-date">
+        </div>
+        <div class="audit-field">
+          <label class="audit-label" for="auditHasta">Hasta</label>
+          <input type="date" id="auditHasta" class="form-control audit-date">
+        </div>
+      </div>
+      <div class="audit-field">
+        <label class="audit-label" for="auditModulo">Módulo</label>
+        <select class="filter-select" id="auditModulo">
+          <option value="all">Todos</option>
+          <option value="Colchones">Colchones</option>
+          <option value="Muebles">Muebles</option>
+          <option value="Revestimientos">Revestimientos</option>
+          <option value="Pedidos">Pedidos</option>
+        </select>
+      </div>
+      <div class="audit-field">
+        <label class="audit-label" for="auditUsuario">Usuario</label>
+        <select class="filter-select" id="auditUsuario">
+          <option value="all">Todos</option>
+          <option value="sergio">sergio</option>
+          <option value="suny">suny</option>
+        </select>
+      </div>
+      <div class="audit-actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="auditBuscar()">Buscar</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="auditLimpiar()">Limpiar filtros</button>
+      </div>
+    </div>
+
+    <div class="table-wrap audit-table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Usuario</th>
+              <th>Módulo</th>
+              <th>Acción</th>
+              <th>Artículo</th>
+              <th>Valor anterior</th>
+              <th>Valor nuevo</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="auditBody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="auditPageInfo"></span>
+        <div class="audit-pager">
+          <button type="button" class="btn btn-ghost btn-sm" id="auditPrev" onclick="auditPaginaCambiar(-1)" disabled>Anterior</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="auditNext" onclick="auditPaginaCambiar(1)" disabled>Siguiente</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /moduleHistorial -->
 
   <!-- ══ MÓDULO PEDIDOS ══════════════════════════════════════════════════════ -->
 <div id="modulePedidos" style="display:none;">
@@ -930,6 +1015,7 @@
 <script src="js/lista-precios.js"></script>
 <script src="js/pedidos.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/historial.js"></script>
 <script>
   // Se llama al final porque ui.js (el último archivo en cargar) ya invocó
   // init() en su última línea. init() deja los datos cargando "detrás" de la

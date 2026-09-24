@@ -241,6 +241,13 @@ async function generarPedidoPDF() {
     }));
     await sbRequest('POST', '', { fecha, articulos, total_unidades: total }, 'pedidos');
     historialPedidos.unshift({ fecha, articulos, total_unidades: total, created_at: new Date().toISOString() });
+    registrarHistorial({
+      modulo: 'Pedidos',
+      accion: 'Pedido generado',
+      articulo: 'MaxiKing',
+      valorNuevo: total,
+      detalle: items.length
+    });
   } catch(e) { console.warn('No se pudo guardar el pedido:', e.message); }
 
   // Agrupar por línea

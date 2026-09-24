@@ -1197,3 +1197,57 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   #preciosDolarActualizarBtn { width: 100%; }
 }
 
+/* ── HISTORIAL DE AUDITORÍA (solo lectura) ───────────────────────────────────── */
+.audit-filters {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px;
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: 4px;
+  box-shadow: var(--shadow-sm); padding: 12px 14px; margin-bottom: 14px;
+}
+.audit-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.audit-rango { display: flex; flex-wrap: wrap; gap: 10px 12px; }
+.audit-label {
+  font-family: var(--font-display); font-weight: 800; font-size: 11px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--gray-500);
+}
+.audit-filters .filter-select { min-width: 150px; }
+.audit-date { padding: 8px 10px; min-width: 150px; }
+.audit-actions { display: flex; gap: 8px; margin-left: auto; }
+.audit-pager { display: flex; gap: 8px; }
+.audit-pager .btn:disabled { opacity: 0.45; cursor: default; }
+
+/* Filas alternadas rojo suave/blanco, igual que la lista de precios. Las filas
+   de eventos destacados van después (misma especificidad, gana la última) y
+   usan un tono más marcado + una franja a la izquierda para distinguirse del
+   rojo suave del alternado. */
+.audit-table-wrap tbody tr:nth-child(odd)  { background: #FFFFFF; }
+.audit-table-wrap tbody tr:nth-child(even) { background: #FFE8E8; }
+.audit-table-wrap tbody tr { transition: background 0.15s; }
+.audit-table-wrap tbody tr:nth-child(odd):hover  { background: #F5F5F5; }
+.audit-table-wrap tbody tr:nth-child(even):hover { background: #FADADB; }
+.audit-table-wrap tbody tr.audit-row-del   { background: #FFC9CF; }
+.audit-table-wrap tbody tr.audit-row-venta { background: #D9F2DE; }
+.audit-table-wrap tbody tr.audit-row-nuevo { background: #D8E9FB; }
+.audit-table-wrap tbody tr.audit-row-del:hover   { background: #FFB8C0; }
+.audit-table-wrap tbody tr.audit-row-venta:hover { background: #C6EBCD; }
+.audit-table-wrap tbody tr.audit-row-nuevo:hover { background: #C4DDF8; }
+.audit-table-wrap tbody tr.audit-row-del   td:first-child { box-shadow: inset 4px 0 0 var(--red); }
+.audit-table-wrap tbody tr.audit-row-venta td:first-child { box-shadow: inset 4px 0 0 #2E7D32; }
+.audit-table-wrap tbody tr.audit-row-nuevo td:first-child { box-shadow: inset 4px 0 0 #1565C0; }
+.audit-table-wrap td { font-size: 14px; vertical-align: top; }
+.audit-table-wrap table { min-width: 900px; }
+
+@media (max-width: 640px) {
+  .audit-filters { flex-direction: column; align-items: stretch; }
+  .audit-rango { flex-direction: column; }
+  .audit-filters .filter-select, .audit-date { width: 100%; min-width: 0; }
+  .audit-actions { margin-left: 0; }
+  .audit-actions .btn { flex: 1; justify-content: center; }
+  .audit-table-wrap table { min-width: 0; }
+  .audit-table-wrap tbody tr.audit-row-del   td:first-child,
+  .audit-table-wrap tbody tr.audit-row-venta td:first-child,
+  .audit-table-wrap tbody tr.audit-row-nuevo td:first-child { box-shadow: none; }
+  .audit-table-wrap tbody tr.audit-row-del   { border-left: 4px solid var(--red); }
+  .audit-table-wrap tbody tr.audit-row-venta { border-left: 4px solid #2E7D32; }
+  .audit-table-wrap tbody tr.audit-row-nuevo { border-left: 4px solid #1565C0; }
+}
+

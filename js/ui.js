@@ -203,12 +203,14 @@ async function quickQty(id, delta) {
   const arr = getActiveStock();
   const idx = arr.findIndex(i => i.id === id);
   if (idx < 0) return;
-  const nv = Math.max(0, arr[idx].cantidad + delta);
+  const prev = arr[idx].cantidad;
+  const nv = Math.max(0, prev + delta);
   const f  = today();
   try {
     await sbRequest('PATCH', `?id=eq.${id}`, { cantidad: nv, fecha: f }, getActiveTable());
     arr[idx].cantidad = nv;
     arr[idx].fecha = f;
+    if (nv !== prev) registrarHistorialStock('Ajuste stock', arr[idx].descripcion, { valorAnterior: prev, valorNuevo: nv });
     renderTable();
     showToast(`Stock: ${nv} u.`, 'success');
   } catch(e) { showToast('Error al actualizar', 'error'); }
@@ -239,10 +241,12 @@ async function saveQty() {
   const idx = arr.findIndex(i => i.id === qtyEditId);
   if (idx < 0) return;
   const f = today();
+  const prev = arr[idx].cantidad;
   try {
     await sbRequest('PATCH', `?id=eq.${qtyEditId}`, { cantidad: val, fecha: f }, getActiveTable());
     arr[idx].cantidad = val;
     arr[idx].fecha = f;
+    if (val !== prev) registrarHistorialStock('Ajuste stock', arr[idx].descripcion, { valorAnterior: prev, valorNuevo: val });
     closeModal('qtyModal'); renderTable();
     showToast(`Cantidad guardada: ${val} u.`, 'success');
   } catch(e) { showToast('Error al guardar', 'error'); }
@@ -289,10 +293,24 @@ async function saveItem() {
     const table = getActiveTable();
     const precioField = precio !== undefined ? { precio } : {};
     if (editingId) {
-      const updated = await sbRequest('PATCH', `?id=eq.${editingId}`, { codigo, descripcion: desc, cantidad, fecha, ...precioField }, table);
       const arr = getActiveStock();
       const idx = arr.findIndex(i => i.id === editingId);
+      const antes = idx >= 0 ? { ...arr[idx] } : null;
+      const updated = await sbRequest('PATCH', `?id=eq.${editingId}`, { codigo, descripcion: desc, cantidad, fecha, ...precioField }, table);
       if (idx >= 0) arr[idx] = updated[0];
+      if (antes) {
+        try { // el historial es silencioso: nunca debe interrumpir el guardado
+          // Detalle: qué campos cambiaron ("campo: antes → después")
+          const cambios = [];
+          const cmp = (campo, a, b) => { if ((a ?? '') != (b ?? '')) cambios.push(`${campo}: ${a === '' || a == null ? '—' : a} → ${b === '' || b == null ? '—' : b}`); };
+          cmp('código', antes.codigo, codigo);
+          cmp('descripción', antes.descripcion, desc);
+          cmp('cantidad', antes.cantidad, cantidad);
+          cmp('fecha', antes.fecha, fecha);
+          if (precio !== undefined) cmp('precio', antes.precio || 0, precio);
+          registrarHistorialStock('Artículo editado', desc, { detalle: cambios.join('; ') || 'sin cambios' });
+        } catch (_) {}
+      }
       showToast('Artículo actualizado', 'success');
     } else {
       const body = activeModule === 'colchones'
@@ -300,6 +318,7 @@ async function saveItem() {
         : { proveedor: getActiveProvName(), codigo, descripcion: desc, cantidad, fecha, ...precioField };
       const inserted = await sbRequest('POST', '', body, table);
       getActiveStock().push(inserted[0]);
+      registrarHistorialStock('Artículo creado', desc, { valorNuevo: cantidad });
       showToast('Artículo agregado', 'success');
     }
     closeModal('editModal'); renderTable();
@@ -314,7 +333,9 @@ function openDelete(id) {
 }
 async function confirmDelete() {
   try {
+    const eliminado = getActiveStock().find(i => i.id === deletingId);
     await sbRequest('DELETE', `?id=eq.${deletingId}`, null, getActiveTable());
+    if (eliminado) registrarHistorialStock('Artículo eliminado', eliminado.descripcion, { valorAnterior: eliminado.cantidad });
     setActiveStock(getActiveStock().filter(i => i.id !== deletingId));
     closeModal('deleteModal'); renderTable();
     showToast('Artículo eliminado', 'info');
@@ -858,10 +879,13 @@ async function confirmScan() {
         const arr = getActiveStock(); const idx = arr.findIndex(s => s.id === item.existenteId);
         if (idx >= 0) {
           const arr = getActiveStock();
-          const nv = arr[idx].cantidad + item.cantidad;
+          const prevQty = arr[idx].cantidad;
+          const nv = prevQty + item.cantidad;
           const updated = await sbRequest('PATCH', `?id=eq.${item.existenteId}`, { cantidad: nv, fecha: item.fecha }, getActiveTable());
           arr[idx] = updated[0];
           sumados++;
+          // Revestimientos se registra como una única "Factura cargada" al final
+          if (activeModule !== 'revestimientos') registrarHistorialStock('Ajuste stock', arr[idx].descripcion, { valorAnterior: prevQty, valorNuevo: nv, detalle: 'Carga de factura' });
         }
       } else if (item.accion === 'new') {
         const body = activeModule === 'colchones'
@@ -871,9 +895,18 @@ async function confirmScan() {
         const inserted = await sbRequest('POST', '', body, getActiveTable());
         getActiveStock().push(inserted[0]);
         nuevos++;
+        if (activeModule !== 'revestimientos') registrarHistorialStock('Artículo creado', item.descripcion, { valorNuevo: item.cantidad, detalle: 'Carga de factura' });
       } else {
         ignorados++;
       }
+    }
+    if (activeModule === 'revestimientos' && (sumados + nuevos) > 0) {
+      registrarHistorial({
+        modulo: 'Revestimientos',
+        accion: 'Factura cargada',
+        articulo: getActiveProvName(),
+        detalle: sumados + nuevos
+      });
     }
     closeScanModal();
     renderTable();

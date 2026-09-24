@@ -42,6 +42,7 @@ async function switchModule(mod) {
   document.getElementById('tabMuebles').classList.toggle('active',        mod === 'muebles');
   document.getElementById('tabRevestimientos').classList.toggle('active', mod === 'revestimientos');
   document.getElementById('tabPedidos').classList.toggle('active',        mod === 'pedidos');
+  document.getElementById('tabHistorial').classList.toggle('active',      mod === 'historial');
 
   document.getElementById('providerTabsMuebles').style.display = mod === 'muebles' ? 'flex' : 'none';
 
@@ -60,6 +61,7 @@ async function switchModule(mod) {
   // Mostrar/ocultar módulo pedidos vs inventario
   const isStock = ['colchones','muebles','revestimientos'].includes(mod);
   document.getElementById('modulePedidos').style.display  = mod === 'pedidos' ? '' : 'none';
+  document.getElementById('moduleHistorial').style.display = mod === 'historial' ? '' : 'none';
   document.getElementById('moduleStock').style.display    = isStock ? '' : 'none';
   // Mostrar toolbar correcto
   if (isStock) {
@@ -72,6 +74,9 @@ async function switchModule(mod) {
 
   if (mod === 'pedidos') {
     initPedidos();
+    return;
+  } else if (mod === 'historial') {
+    initAuditoria();
     return;
   } else if (mod === 'muebles') {
     if (!stockMuebles[activeProveedor]) await loadMuebles(activeProveedor);
@@ -117,6 +122,7 @@ function updateSectionTitle() {
   if (activeModule === 'colchones')          t.innerHTML = '<span>■</span>Colchones — Inventario';
   else if (activeModule === 'muebles')       t.innerHTML = `<span>■</span>Muebles — ${activeProveedor}`;
   else if (activeModule === 'revestimientos') t.innerHTML = `<span>■</span>Revestimientos — ${activeProveedorRev}`;
+  else if (activeModule === 'historial')     t.innerHTML = '<span>■</span>Historial de Auditoría';
   else                                       t.innerHTML = '<span>■</span>Pedidos — MaxiKing';
 }
 

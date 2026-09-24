@@ -267,6 +267,14 @@ async function confirmarVenta() {
       }
     }
 
+    registrarHistorial({
+      modulo: 'Revestimientos',
+      accion: 'Venta registrada',
+      articulo: items.map(i => i.descripcion).join(', '),
+      valorNuevo: total,
+      detalle: activeProveedorRev
+    });
+
     carrito = {};
     renderCart();
     renderVentaArticulos();
