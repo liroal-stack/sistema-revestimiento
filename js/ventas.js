@@ -1,6 +1,6 @@
 // ── MÓDULO VENTAS (dentro de Revestimientos) ─────────────────────────────────
-// Vende artículos del stock del proveedor activo de Revestimientos, descuenta
-// stock automáticamente y guarda el historial en la tabla `ventas` de Supabase.
+// Vende artículos del stock de TODOS los proveedores de Revestimientos (con
+// filtro por proveedor), descuenta stock automáticamente y guarda el historial en la tabla `ventas` de Supabase.
 //
 // El carrito admite dos tipos de ítem (distinguidos por `source` en la clave
 // "stock_<id>" / "precio_<id>", para no confundir ids de stock_revestimientos
@@ -15,9 +15,35 @@
 //                        vende igual, sin tope de cantidad ni descuento de
 //                        stock. Se guarda como con_stock: false.
 
-let carrito         = {};    // { "stock_<id>"|"precio_<id>": { source, refId, cantidad, codigo, descripcion, precio, stockDisponible? } }
+let carrito         = {};    // { "stock_<id>"|"precio_<id>": { source, refId, cantidad, codigo, descripcion, precio, proveedor?, stockDisponible? } }
 let historialVentas  = [];
 let ventasCargadas  = false;
+
+// Artículos vendibles de TODOS los proveedores de stock_revestimientos. Se traen
+// una sola vez (ventaStockCache); ver getVentaStockItems() para cómo se combinan
+// con lo que ya haya cargado la solapa Stock.
+let ventaStockCache   = [];
+let ventaStockCargado = false;
+
+// Clase CSS del badge según proveedor (los que no figuran usan el gris genérico)
+const VENTA_PROVEEDOR_CLASES = {
+  'AMT Maderas': 'amt',
+  'GB Market Espejos': 'gb',
+  'ND Euromaglia': 'nd'
+};
+
+// Lista única de artículos vendibles. Para cada proveedor que la solapa Stock ya
+// cargó se usan SUS objetos (son los que Stock mantiene al día al sumar/restar
+// cantidades o editar/borrar artículos, así que Ventas nunca queda desactualizada
+// respecto de eso); para el resto se usan las filas de ventaStockCache. Esas
+// filas traen solo las columnas que necesita Ventas, por eso no se vuelcan en
+// stockRevestimientos (que la solapa Stock espera completo).
+function getVentaStockItems() {
+  const porProveedor = {};
+  ventaStockCache.forEach(r => { (porProveedor[r.proveedor] = porProveedor[r.proveedor] || []).push(r); });
+  Object.keys(stockRevestimientos).forEach(p => { porProveedor[p] = stockRevestimientos[p]; });
+  return Object.values(porProveedor).flat();
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 // preserveCart=true evita vaciar el carrito: lo usa el flujo "Agregar a venta"
@@ -30,17 +56,35 @@ async function initVentas(preserveCart) {
   renderCart();
   renderVentaArticulos();
 
-  if (!ventasCargadas) {
+  // Los datos se piden a Supabase una sola vez: al pasar de una sub-pestaña a
+  // otra (Stock → Ventas → Precios) se reutiliza lo que ya está en memoria.
+  if (!ventasCargadas || !ventaStockCargado) {
     setLoading(true);
     try {
-      historialVentas = await sbRequest('GET', '?select=*&order=fecha.desc,created_at.desc', null, 'ventas') || [];
-      ventasCargadas = true;
-    } catch(e) {
-      showToast('Error al cargar historial de ventas', 'error');
-      console.error(e);
+      if (!ventasCargadas) {
+        try {
+          historialVentas = await sbRequest('GET', '?select=*&order=fecha.desc,created_at.desc', null, 'ventas') || [];
+          ventasCargadas = true;
+        } catch(e) {
+          showToast('Error al cargar historial de ventas', 'error');
+          console.error(e);
+        }
+      }
+      if (!ventaStockCargado) {
+        try {
+          ventaStockCache = await sbRequest('GET',
+            '?select=id,proveedor,codigo,descripcion,cantidad,precio&order=proveedor.asc,descripcion.asc',
+            null, 'stock_revestimientos') || [];
+          ventaStockCargado = true;
+        } catch(e) {
+          showToast('Error al cargar los artículos para vender', 'error');
+          console.error(e);
+        }
+      }
     } finally {
       setLoading(false);
     }
+    renderVentaArticulos();
   }
 
   updateVentasKPIs();
@@ -49,20 +93,55 @@ async function initVentas(preserveCart) {
 }
 
 // ── LISTA DE ARTÍCULOS (izquierda) ────────────────────────────────────────────
+// Rellena el selector de proveedor con los valores únicos de `proveedor` de los
+// artículos cargados (nada hardcodeado). Solo reconstruye las opciones si el
+// conjunto de proveedores cambió, para no cerrar el desplegable mientras se
+// escribe en el buscador, y conserva la selección actual.
+function poblarVentaFiltroProveedor(items) {
+  const sel = document.getElementById('ventaFiltroProveedor');
+  if (!sel) return;
+  const proveedores = [...new Set(items.map(i => i.proveedor).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es'));
+  const clave = proveedores.join('|');
+  if (sel.dataset.proveedores === clave) return;
+  const actual = sel.value;
+  sel.innerHTML = '<option value="all">Todos los proveedores</option>' +
+    proveedores.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  sel.value = proveedores.includes(actual) ? actual : 'all';
+  sel.dataset.proveedores = clave;
+}
+
 function renderVentaArticulos() {
-  const search = (document.getElementById('ventaBuscar')?.value || '').toLowerCase().trim();
-  const stock  = stockRevestimientos[activeProveedorRev] || [];
-  const items  = stock.filter(i =>
-    !search ||
-    i.descripcion.toLowerCase().includes(search) ||
-    (i.codigo || '').toLowerCase().includes(search)
+  const todos = getVentaStockItems();
+  poblarVentaFiltroProveedor(todos);
+
+  // Búsqueda sin distinguir mayúsculas ni acentos, por descripción y código;
+  // todas las palabras escritas tienen que aparecer (en cualquier orden).
+  const terminos = normalizarBusquedaPrecios(document.getElementById('ventaBuscar')?.value || '')
+    .split(/\s+/).filter(Boolean);
+  const proveedor = document.getElementById('ventaFiltroProveedor')?.value || 'all';
+
+  const items = todos.filter(i => {
+    if (proveedor !== 'all' && i.proveedor !== proveedor) return false;
+    if (!terminos.length) return true;
+    const haystack = normalizarBusquedaPrecios(`${i.descripcion} ${i.codigo || ''}`);
+    return terminos.every(t => haystack.includes(t));
+  });
+
+  // Primero los que tienen stock (por proveedor A→Z y luego por descripción);
+  // los sin stock quedan al final con el mismo criterio.
+  const grupo = i => (i.cantidad > 0 ? 0 : 1);
+  items.sort((a, b) =>
+    grupo(a) - grupo(b) ||
+    (a.proveedor || '').localeCompare(b.proveedor || '', 'es') ||
+    a.descripcion.localeCompare(b.descripcion, 'es')
   );
 
   const tbody = document.getElementById('ventaArticulosBody');
   if (!tbody) return;
 
   if (!items.length) {
-    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">📦</span><p>No se encontraron artículos</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="icon">📦</span><p>No se encontraron artículos</p></div></td></tr>`;
     return;
   }
 
@@ -72,13 +151,17 @@ function renderVentaArticulos() {
     const sinStock   = disponible <= 0 || enCarrito >= disponible;
     const sinPrecio  = !item.precio;
     const qc = disponible > 2 ? 'ok' : disponible > 0 ? 'low' : 'zero';
+    const provClase = VENTA_PROVEEDOR_CLASES[item.proveedor] || 'otro';
     return `<tr>
+      <td><span class="venta-prov-badge ${provClase}">${esc(item.proveedor || '—')}</span></td>
       <td><span class="td-codigo">${esc(item.codigo || '—')}</span></td>
       <td>
         <span class="td-desc">${esc(item.descripcion)}</span>
         ${enCarrito ? `<div class="venta-en-carrito">${enCarrito} en el carrito</div>` : ''}
       </td>
-      <td class="center"><span class="qty-display ${qc}" style="cursor:default;">${disponible}</span></td>
+      <td class="center">${disponible > 0
+        ? `<span class="qty-display ${qc}" style="cursor:default;">${disponible}</span>`
+        : `<span class="venta-badge-sin-stock">Sin stock</span>`}</td>
       <td><span class="td-precio ${sinPrecio ? 'cero' : ''}">${sinPrecio ? '— sin precio' : formatPrecio(item.precio)}</span></td>
       <td class="center">
         <button class="btn btn-primary btn-sm btn-icon" onclick="addToCart(${item.id})"
@@ -93,8 +176,7 @@ function renderVentaArticulos() {
 
 // ── CARRITO ───────────────────────────────────────────────────────────────────
 function addToCart(id) {
-  const stock = stockRevestimientos[activeProveedorRev] || [];
-  const item  = stock.find(i => i.id === id);
+  const item  = getVentaStockItems().find(i => i.id === id);
   if (!item) return;
 
   if (!item.precio) { showToast('Este artículo no tiene precio cargado', 'error'); return; }
@@ -110,6 +192,7 @@ function addToCart(id) {
     codigo: item.codigo,
     descripcion: item.descripcion,
     precio: item.precio,
+    proveedor: item.proveedor,
     stockDisponible: item.cantidad
   };
   renderCart();
@@ -218,7 +301,7 @@ async function confirmarVenta() {
   const ids = Object.keys(carrito);
   if (!ids.length) { showToast('El carrito está vacío', 'error'); return; }
 
-  const stock = stockRevestimientos[activeProveedorRev] || [];
+  const stock = getVentaStockItems();
 
   // Revalidación defensiva por si el stock cambió desde que se armó el carrito.
   // Los ítems 'precio' (sin stock, agregados desde la Lista de Precios) no tienen
@@ -242,7 +325,7 @@ async function confirmarVenta() {
       con_stock: it.source === 'stock', // trazabilidad: si descontó stock_revestimientos o no
       codigo: it.codigo,
       descripcion: it.descripcion,
-      proveedor: activeProveedorRev,
+      proveedor: it.proveedor || activeProveedorRev,
       cantidad: it.cantidad,
       precio: it.precio,
       subtotal: it.cantidad * it.precio
@@ -264,6 +347,8 @@ async function confirmarVenta() {
         const nuevaCantidad = Math.max(0, stock[idx].cantidad - item.cantidad);
         await sbRequest('PATCH', `?id=eq.${item.id}`, { cantidad: nuevaCantidad, fecha: today() }, 'stock_revestimientos');
         stock[idx].cantidad = nuevaCantidad;
+        const enCache = ventaStockCache.find(s => s.id === item.id);
+        if (enCache) enCache.cantidad = nuevaCantidad;
       }
     }
 
@@ -272,7 +357,7 @@ async function confirmarVenta() {
       accion: 'Venta registrada',
       articulo: items.map(i => i.descripcion).join(', '),
       valorNuevo: total,
-      detalle: activeProveedorRev
+      detalle: [...new Set(items.map(i => i.proveedor))].join(', ')
     });
 
     carrito = {};
