@@ -1009,6 +1009,14 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- Asistente de voz "Jarvis": ver js/jarvis.js. Banner de estado + botón flotante
+     (visible para todos los usuarios; queda por debajo de la pantalla de login y de los modales) -->
+<div class="jarvis-banner" id="jarvisBanner" role="status" aria-live="polite" hidden></div>
+<button type="button" class="jarvis-btn" id="jarvisBtn" onclick="jarvisToggle()"
+        aria-label="Hablar con Jarvis" aria-pressed="false" data-tooltip="Hablar con Jarvis">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+</button>
+
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/supabase.js"></script>
@@ -1021,6 +1029,7 @@
 <script src="js/pedidos.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/historial.js"></script>
+<script src="js/jarvis.js"></script>
 <script>
   // Se llama al final porque ui.js (el último archivo en cargar) ya invocó
   // init() en su última línea. init() deja los datos cargando "detrás" de la

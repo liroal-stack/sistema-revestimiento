@@ -32,6 +32,17 @@ const VENTA_PROVEEDOR_CLASES = {
   'ND Euromaglia': 'nd'
 };
 
+// Trae de una vez los artículos de todos los proveedores (solo una vez por
+// sesión); también la usa el asistente de voz (js/jarvis.js) para buscar en
+// todos los proveedores. Lanza el error si falla, para que cada llamador decida.
+async function cargarVentaStock() {
+  if (ventaStockCargado) return;
+  ventaStockCache = await sbRequest('GET',
+    '?select=id,proveedor,codigo,descripcion,cantidad,precio&order=proveedor.asc,descripcion.asc',
+    null, 'stock_revestimientos') || [];
+  ventaStockCargado = true;
+}
+
 // Lista única de artículos vendibles. Para cada proveedor que la solapa Stock ya
 // cargó se usan SUS objetos (son los que Stock mantiene al día al sumar/restar
 // cantidades o editar/borrar artículos, así que Ventas nunca queda desactualizada
@@ -72,10 +83,7 @@ async function initVentas(preserveCart) {
       }
       if (!ventaStockCargado) {
         try {
-          ventaStockCache = await sbRequest('GET',
-            '?select=id,proveedor,codigo,descripcion,cantidad,precio&order=proveedor.asc,descripcion.asc',
-            null, 'stock_revestimientos') || [];
-          ventaStockCargado = true;
+          await cargarVentaStock();
         } catch(e) {
           showToast('Error al cargar los artículos para vender', 'error');
           console.error(e);

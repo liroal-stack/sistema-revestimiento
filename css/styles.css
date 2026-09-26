@@ -315,8 +315,9 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .delete-name { font-weight: 700; color: var(--gray-900); display: block; margin-top: 10px; padding: 8px 12px; background: var(--gray-50); border-left: 3px solid var(--red); border-radius: 2px; font-size: 15px; }
 
 /* TOAST */
-.toast-container { position: fixed; bottom: 20px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 999; pointer-events: none; }
-@media (max-width: 480px) { .toast-container { left: 12px; right: 12px; bottom: 14px; } }
+/* bottom: deja libre la esquina inferior derecha para el botón flotante de voz (.jarvis-btn) */
+.toast-container { position: fixed; bottom: 92px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 999; pointer-events: none; }
+@media (max-width: 480px) { .toast-container { left: 12px; right: 12px; bottom: 90px; } }
 .toast {
   background: var(--gray-900); color: white; padding: 12px 16px;
   border-radius: 6px; font-size: 14px; font-weight: 500;
@@ -326,6 +327,8 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
 .toast.success { border-left-color: #4CAF50; }
 .toast.error   { border-left-color: var(--red); }
 .toast.info    { border-left-color: #2196F3; }
+.toast.voz-ok    { border-left-color: #4CAF50; }
+.toast.voz-error { border-left-color: var(--red); }
 @keyframes toastIn  { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes toastOut { to   { transform: translateY(20px); opacity: 0; } }
 /* SCAN MODAL */
@@ -1270,5 +1273,63 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   .audit-table-wrap tbody tr.audit-row-del   { border-left: 4px solid var(--red); }
   .audit-table-wrap tbody tr.audit-row-venta { border-left: 4px solid #2E7D32; }
   .audit-table-wrap tbody tr.audit-row-nuevo { border-left: 4px solid #1565C0; }
+}
+
+/* ── ASISTENTE DE VOZ "JARVIS" (botón flotante + banner) ─────────────────────── */
+/* z-index: por encima del contenido y del header (100), por debajo de los modales
+   (200+) y de la pantalla de login (1000). */
+.jarvis-btn {
+  position: fixed; right: 20px; bottom: 20px; z-index: 150;
+  width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--red); color: #fff;
+  box-shadow: 0 4px 14px rgba(200,16,46,0.4);
+  transition: background 0.2s, transform 0.15s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.jarvis-btn:hover { background: var(--red-dark); transform: scale(1.06); }
+.jarvis-btn:focus-visible { outline: 3px solid var(--gray-900); outline-offset: 3px; }
+.jarvis-btn.escuchando { background: #2E7D32; animation: jarvisPulse 1.3s ease-out infinite; }
+.jarvis-btn.procesando { background: var(--gray-900); cursor: progress; }
+@keyframes jarvisPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(46,125,50,0.55), 0 4px 14px rgba(46,125,50,0.4); }
+  70%  { box-shadow: 0 0 0 18px rgba(46,125,50,0), 0 4px 14px rgba(46,125,50,0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(46,125,50,0), 0 4px 14px rgba(46,125,50,0.4); }
+}
+/* Tooltip "Hablar con Jarvis": solo con hover real (no en pantallas táctiles) */
+.jarvis-btn::after {
+  content: attr(data-tooltip); position: absolute; right: calc(100% + 10px); top: 50%;
+  transform: translateY(-50%); white-space: nowrap; pointer-events: none;
+  background: var(--gray-900); color: #fff; padding: 6px 10px; border-radius: 4px;
+  font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: 0.5px;
+  opacity: 0; transition: opacity 0.15s;
+}
+@media (hover: hover) {
+  .jarvis-btn:hover::after, .jarvis-btn:focus-visible::after { opacity: 1; }
+}
+.jarvis-btn.escuchando::after, .jarvis-btn.procesando::after { display: none; }
+
+.jarvis-banner {
+  position: fixed; top: 128px; left: 50%; transform: translateX(-50%); z-index: 160; /* justo debajo del header y las pestañas de módulos */
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  max-width: calc(100vw - 32px); padding: 10px 20px; border-radius: 24px;
+  background: rgba(26,26,26,0.94); color: #fff; box-shadow: var(--shadow-lg);
+  font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 0.3px;
+  animation: toastIn 0.2s ease; pointer-events: none;
+}
+.jarvis-banner[hidden] { display: none; }
+.jarvis-banner small {
+  font-family: 'Barlow', sans-serif; font-weight: 500; font-size: 12px; opacity: 0.8;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .jarvis-btn { right: 14px; bottom: 16px; width: 60px; height: 60px; }
+}
+/* Espacio al final de la página para que el botón flotante no tape el último
+   contenido (p. ej. los botones del carrito de Ventas en mobile) */
+main { padding-bottom: 100px; }
+@media (prefers-reduced-motion: reduce) {
+  .jarvis-btn.escuchando { animation: none; }
+  .jarvis-banner { animation: none; }
 }
 

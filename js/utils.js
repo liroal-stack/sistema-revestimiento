@@ -7,11 +7,12 @@ function today() { return new Date().toISOString().slice(0,10); }
 function formatDate(s) { if(!s) return '—'; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function showToast(msg, type='info') {
-  const icons = {success:'✓',error:'✕',info:'ℹ'};
+  // 'voz-ok' / 'voz-error' (asistente de voz) no llevan ícono propio: sus mensajes ya empiezan con ✅ / ❌
+  const icons = {success:'✓',error:'✕',info:'ℹ','voz-ok':'','voz-error':''};
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = `toast ${type}`;
-  t.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+  t.innerHTML = (icons[type] ? `<span>${icons[type]}</span> ` : '') + msg;
   c.appendChild(t);
   setTimeout(() => { t.style.animation='toastOut 0.3s ease forwards'; setTimeout(()=>t.remove(),300); }, 2800);
 }
