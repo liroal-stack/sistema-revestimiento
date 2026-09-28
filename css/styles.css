@@ -1333,3 +1333,84 @@ main { padding-bottom: 100px; }
   .jarvis-banner { animation: none; }
 }
 
+/* ── TOUCH: sin hover en tablets/celulares ────────────────────────────────────
+   El botón "×" de las solapas de proveedores solo se mostraba con :hover, algo
+   que en una pantalla táctil nunca se dispara — no había forma de eliminar una
+   solapa no activa tocando la pantalla. (hover:none) cubre cualquier dispositivo
+   sin puntero de mouse (tablets y celulares), no solo el rango de tablet. */
+@media (hover: none) {
+  .prov-del { opacity: 1; width: 14px; }
+}
+
+/* ── TABLET (768px – 1024px) ───────────────────────────────────────────────────
+   Capa de optimización táctil aparte de mobile (≤640px) y desktop: mismo layout
+   de tabla "real" que desktop (no las cards de mobile), pero con objetivos
+   táctiles más grandes, más aire entre elementos y sin depender de hover. Se
+   agrega DESPUÉS de todo lo demás para poder pisar, dentro de este rango nada
+   más, reglas puntuales ya escritas para mobile (≤900px) o desktop. */
+@media (min-width: 768px) and (max-width: 1024px) {
+
+  /* Header y navegación */
+  .module-tab { min-height: 48px; }
+  .btn-settings { padding: 10px 14px; min-height: 44px; gap: 8px; font-size: 13px; }
+  .revest-subtabs { gap: 10px; }
+  .revest-subtab { padding: 13px 24px; min-height: 48px; font-size: 14px; }
+  .provider-tabs { gap: 10px; padding: 10px; }
+  .prov-tab { padding: 12px 20px; min-height: 44px; font-size: 15px; }
+  .prov-add { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+  /* Tablas de stock: más alto, más legible, sin depender de hover para las acciones */
+  td, th { padding: 15px 14px; }
+  td { font-size: 16px; }
+  .td-desc, .td-precio { font-size: 16px; }
+  .qty-btn { width: 40px; height: 40px; font-size: 20px; }
+  .qty-display { min-width: 46px; height: 40px; font-size: 17px; }
+  .actions-cell { gap: 10px; }
+  .btn-icon { min-width: 44px; min-height: 44px; padding: 0; }
+  .date-chip { font-size: 14px; padding: 5px 10px; }
+  .toolbar { padding: 14px; gap: 10px; }
+  .search-box input { padding: 13px 13px 13px 38px; font-size: 16px; }
+  .filter-select { padding: 12px 32px 12px 13px; font-size: 15px; }
+
+  /* Ventas: carrito y lista lado a lado (la regla general los apila hasta
+     900px; acá se pisa esa regla para todo el rango de tablet) */
+  .ventas-layout { grid-template-columns: 1fr 320px; }
+  .ventas-carrito { position: sticky; top: 128px; max-height: calc(100vh - 240px); }
+  .ventas-articulos-scroll, .cart-items, .precios-categoria-list { -webkit-overflow-scrolling: touch; }
+  .cart-qty-input { width: 54px; height: 40px; font-size: 15px; }
+  .cart-footer-btns { gap: 12px; }
+  .cart-footer-btns .btn { padding: 14px; font-size: 17px; min-height: 48px; }
+
+  /* Precios: buscador y selector de categoría más cómodos para escribir/tocar */
+  .precios-search-box input { padding: 14px 14px 14px 40px; font-size: 17px; }
+  .precios-categoria-btn { padding: 13px 14px; min-height: 48px; font-size: 15px; }
+  .precios-categoria-opt { padding: 13px 14px; min-height: 44px; display: flex; align-items: center; box-sizing: border-box; }
+  .precios-fuente-tab { padding: 10px 18px; min-height: 48px; justify-content: center; }
+  /* El widget del dólar no debe colapsar a columna en tablet (eso es solo para mobile) */
+  .precios-dolar-widget { flex-wrap: nowrap; gap: 14px; }
+  .precios-dolar-manual { flex-wrap: nowrap; }
+
+  /* Modales y formularios */
+  /* vw (no %) porque .modal-overlay tiene su propio padding: un % ahí adentro
+     terminaba dando ~80% del viewport real en vez del 85% buscado */
+  .modal { width: 88vw; max-width: 640px; }
+  .form-control { padding: 13px 12px; font-size: 16px; }
+  .form-group { margin-bottom: 18px; }
+  .modal-footer { gap: 14px; padding: 16px 20px; }
+  .modal-footer .btn { padding: 13px 22px; font-size: 16px; min-height: 48px; }
+  .qty-modal-btn { width: 64px; height: 64px; font-size: 32px; }
+  .qty-modal-input { width: 100px; height: 64px; font-size: 38px; }
+
+  /* Botón flotante de Jarvis: 64px. En este rango el carrito de Ventas es la
+     columna derecha (ver .ventas-layout arriba) y su botón "Confirmar Venta"
+     puede terminar justo en la esquina inferior derecha según cuánto tenga
+     el carrito — pasa incluso con el carrito vacío, sin hacer scroll. En vez
+     de perseguir esa altura (que cambia con el contenido), se centra el botón
+     abajo: al no estar sobre la columna derecha, nunca queda encima del
+     carrito sea cual sea su alto. */
+  .jarvis-btn { width: 64px; height: 64px; left: 50%; right: auto; bottom: 22px; transform: translateX(-50%); }
+  .jarvis-btn:hover { transform: translateX(-50%) scale(1.06); }
+  .jarvis-btn::after { right: auto; left: 50%; top: auto; bottom: calc(100% + 10px); transform: translateX(-50%); }
+  .jarvis-banner { top: 118px; }
+}
+
