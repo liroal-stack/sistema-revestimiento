@@ -218,7 +218,6 @@ async function jarvisProcesar(texto, sesion) {
 
 // ── EJECUCIÓN DE ACCIONES ────────────────────────────────────────────────────
 const jarvisNorm = s => normalizarBusquedaPrecios(String(s || ''));
-const jarvisTokens = s => jarvisNorm(s).split(/\s+/).filter(Boolean);
 const jarvisEsperar = (cond, ms) => new Promise(res => {
   const t0 = Date.now();
   (function tick() { if (cond() || Date.now() - t0 > ms) res(cond()); else setTimeout(tick, 100); })();
@@ -244,63 +243,18 @@ function jarvisElegir(dicho, candidatos) {
   return parcial ? parcial.valor : null;
 }
 
-function jarvisContar(items, tokens, campoProveedor) {
-  const cuenta = {};
-  items.forEach(i => {
-    const h = jarvisNorm(`${i.descripcion} ${i.codigo || ''}`);
-    if (tokens.every(t => h.includes(t))) cuenta[campoProveedor(i)] = (cuenta[campoProveedor(i)] || 0) + 1;
-  });
-  return cuenta;
-}
-
-async function jarvisAccion_buscar(a) {
+// "buscar" ya no navega a un módulo puntual: abre la búsqueda global (ver
+// js/busqueda-global.js), que busca en TODOS los módulos permitidos a la vez y
+// muestra los resultados agrupados — el usuario toca el que le interesa. El
+// "modulo" que devuelve Claude para esta acción ya no hace falta (la búsqueda
+// global decide sola dónde hay resultados), pero se sigue pidiendo en el
+// prompt por si en el futuro se necesita filtrar de entrada.
+function jarvisAccion_buscar(a) {
   const termino = String(a.termino || '').trim();
   if (!termino) throw new JarvisError('❌ No entendí qué querés buscar. Intentá de nuevo');
-  const mod = a.modulo;
-  if (!JARVIS_MODULOS[mod] || mod === 'pedidos' || mod === 'historial') {
-    throw new JarvisError('❌ No sé buscar en ese módulo. Intentá de nuevo');
-  }
-  const tokens = jarvisTokens(termino);
-  let extra = '';
-
-  if (mod === 'colchones' || mod === 'muebles') {
-    await jarvisIrAModulo(mod);
-    document.getElementById(mod === 'colchones' ? 'searchInput' : 'searchInputGenerico').value = termino;
-    renderTable();
-
-  } else if (mod === 'revestimientos') {
-    await jarvisIrAModulo('revestimientos');
-    switchRevestSubview('stock');
-    // El stock se ve por proveedor: si el activo no tiene resultados pero otro sí,
-    // se cambia a ese (p. ej. "espejos" vive en GB Market Espejos).
-    try { await cargarVentaStock(); } catch (_) {}
-    const cuenta = jarvisContar(getVentaStockItems(), tokens, i => i.proveedor);
-    if (!cuenta[activeProveedorRev]) {
-      const mejor = Object.keys(cuenta).sort((x, y) => cuenta[y] - cuenta[x])[0];
-      if (mejor) { await switchProveedor('revestimientos', mejor); extra = ` (${esc(mejor)})`; }
-    }
-    document.getElementById('searchInputGenerico').value = termino;
-    renderTable();
-
-  } else { // precios
-    await jarvisIrAModulo('revestimientos');
-    switchRevestSubview('precios');
-    await jarvisEsperar(() => listaPreciosCargada, JARVIS_TIMEOUT_MS);
-    // Igual que arriba: si la lista activa no tiene resultados pero otra sí, se cambia
-    const fuenteActiva = getListaPreciosFuenteActiva();
-    const hayEnActiva = jarvisContar(getItemsFuenteActiva(), tokens, () => 'x').x;
-    if (!hayEnActiva) {
-      const otra = LISTA_PRECIOS_FUENTES.find(f => f !== fuenteActiva &&
-        jarvisContar(listaPrecios.filter(f.filtro), tokens, () => 'x').x);
-      if (otra) { switchListaPreciosFuente(otra.id); extra = ` (${esc(otra.nombreCorto)})`; }
-    }
-    // categoría en "todas" para que el término no quede filtrado por una elegida antes
-    const sel = document.getElementById('preciosFiltroCategoria');
-    if (sel) { sel.value = 'all'; renderCategoriaDropdownList(); }
-    document.getElementById('preciosBuscar').value = termino;
-    renderListaPreciosResultados();
-  }
-  return `Buscando '${esc(termino)}' en ${JARVIS_MODULOS[mod]}${extra}`;
+  if (typeof openBusquedaGlobal !== 'function') throw new JarvisError('❌ El buscador global no está disponible');
+  openBusquedaGlobal(termino);
+  return null; // el modal ya muestra el resultado — no hace falta otro toast encima
 }
 
 async function jarvisAccion_filtrar(a) {

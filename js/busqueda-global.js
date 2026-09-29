@@ -131,6 +131,27 @@ function abrirBusquedaGlobal() {
   setTimeout(() => input.focus(), 50);
 }
 
+// Punto de entrada para Jarvis (js/jarvis.js): abre el modal, carga el término
+// y ejecuta la búsqueda de una — sin esperar el debounce, porque acá el
+// término ya viene completo (lo interpretó Claude Haiku a partir del audio,
+// no lo está tipeando el usuario letra por letra). Expuesta en window por las
+// dudas, aunque una function de nivel superior en un script clásico ya es
+// global de por sí.
+function openBusquedaGlobal(termino) {
+  if (!getCurrentUser()) return;
+  const overlay = document.getElementById('busquedaGlobalOverlay');
+  const input   = document.getElementById('busquedaGlobalInput');
+  if (!overlay || !input) return;
+  clearTimeout(busquedaGlobalDebounceTimer);
+  overlay.hidden = false;
+  const t = String(termino || '').trim();
+  input.value = t;
+  if (t.length >= BUSQUEDA_GLOBAL_MIN_CHARS) busquedaGlobalEjecutar(t);
+  else busquedaGlobalRenderEstadoInicial();
+  setTimeout(() => input.focus(), 50);
+}
+window.openBusquedaGlobal = openBusquedaGlobal;
+
 function cerrarBusquedaGlobal() {
   const overlay = document.getElementById('busquedaGlobalOverlay');
   if (overlay) overlay.hidden = true;
