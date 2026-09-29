@@ -52,6 +52,10 @@
   <span class="header-badge">Gestión de Stock</span>
   <div style="display:flex;align-items:center;gap:12px;">
     <span style="font-size:10px;color:var(--gray-300);font-family:monospace;">v2.8</span>
+    <!-- Búsqueda global: visible para todos los usuarios, ver js/busqueda-global.js -->
+    <button class="btn-settings btn-icon-only" onclick="abrirBusquedaGlobal()" title="Buscar en todo el sistema (Ctrl+K)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
     <button class="btn-settings" onclick="openSettings()" title="Configurar API Keys">
       <div class="settings-dot" id="settingsDot"></div>
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1009,6 +1013,21 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- Búsqueda global: ver js/busqueda-global.js. Por encima del botón de Jarvis
+     (mismo z-index que el resto de los modales) mientras está abierta. -->
+<div class="busqueda-global-overlay" id="busquedaGlobalOverlay" hidden onclick="if(event.target===this)cerrarBusquedaGlobal()">
+  <div class="busqueda-global-modal" role="dialog" aria-modal="true" aria-label="Búsqueda global">
+    <div class="busqueda-global-header">
+      <svg class="busqueda-global-icono" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="busquedaGlobalInput" class="busqueda-global-input"
+        placeholder="Buscar en todo el sistema..." autocomplete="off" spellcheck="false"
+        oninput="busquedaGlobalOnInput()" onkeydown="busquedaGlobalOnKeydown(event)">
+      <button type="button" class="busqueda-global-close" onclick="cerrarBusquedaGlobal()" aria-label="Cerrar búsqueda">✕</button>
+    </div>
+    <div class="busqueda-global-body" id="busquedaGlobalBody"></div>
+  </div>
+</div>
+
 <!-- Asistente de voz "Jarvis": ver js/jarvis.js. Banner de estado + botón flotante
      (visible para todos los usuarios; queda por debajo de la pantalla de login y de los modales) -->
 <div class="jarvis-banner" id="jarvisBanner" role="status" aria-live="polite" hidden></div>
@@ -1031,6 +1050,7 @@
 <script src="js/historial.js"></script>
 <script src="js/jarvis.js"></script>
 <script src="js/tablet-ux.js"></script>
+<script src="js/busqueda-global.js"></script>
 <script>
   // Se llama al final porque ui.js (el último archivo en cargar) ya invocó
   // init() en su última línea. init() deja los datos cargando "detrás" de la

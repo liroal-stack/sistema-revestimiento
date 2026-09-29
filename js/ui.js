@@ -143,7 +143,7 @@ function renderTable() {
           </div>
         </td>` : '';
 
-        return `<tr class="${rc}">
+        return `<tr class="${rc}" data-id="${id}">
         <td data-label="Código"><span class="td-codigo">${esc(codigo)}</span></td>
         <td data-label="Artículo"><span class="td-desc">${esc(descripcion)}</span></td>
         <td data-label="${esAmtMaderas ? 'Cajas' : 'Cantidad'}" class="center ${esAmtMaderas ? 'stock-td-unidades' : ''}">${qty}</td>
@@ -159,7 +159,7 @@ function renderTable() {
       const totalUnidadesCell = esAmtMaderas
         ? `<td class="center stock-td-unidades" data-label="Total Unidades"><strong class="stock-total-unidades">${totalUnidades != null ? totalUnidades : '—'}</strong></td>` : '';
 
-      return `<tr class="${rc}">
+      return `<tr class="${rc}" data-id="${id}">
         <td><span class="td-codigo">${esc(codigo)}</span></td>
         <td><span class="td-desc">${esc(descripcion)}</span></td>
         <td class="center ${esAmtMaderas ? 'stock-td-unidades' : ''}">${qty}</td>

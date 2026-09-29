@@ -1414,3 +1414,129 @@ main { padding-bottom: 100px; }
   .jarvis-banner { top: 118px; }
 }
 
+/* Botón de lupa del header (icono solo, sin texto) */
+.btn-icon-only { padding: 8px; }
+
+/* ── BÚSQUEDA GLOBAL ───────────────────────────────────────────────────────────
+   A diferencia de los demás modales (bottom-sheet en mobile, .modal-overlay),
+   este siempre se ve centrado y anclado cerca del arriba, en las tres pantallas
+   — es un buscador tipo "paleta de comandos", no un formulario. */
+.busqueda-global-overlay {
+  display: flex; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  align-items: flex-start; justify-content: center;
+  padding: 10vh 16px 16px;
+}
+.busqueda-global-overlay[hidden] { display: none; }
+.busqueda-global-modal {
+  width: 100%; max-width: 700px; max-height: 76vh;
+  background: var(--white); border-radius: 10px; box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: modalIn 0.18s ease;
+}
+.busqueda-global-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; border-bottom: 1px solid var(--gray-100); flex-shrink: 0;
+}
+.busqueda-global-icono { color: var(--red); flex-shrink: 0; }
+.busqueda-global-input {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+  font-family: 'Barlow', sans-serif; font-size: 18px; font-weight: 500; color: var(--gray-900);
+}
+.busqueda-global-input::placeholder { color: var(--gray-300); }
+.busqueda-global-close {
+  flex-shrink: 0; width: 32px; height: 32px; border: none; border-radius: 50%;
+  background: var(--gray-100); color: var(--gray-700); font-size: 15px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation;
+}
+.busqueda-global-close:hover { background: var(--gray-200); color: var(--gray-900); }
+.busqueda-global-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 0; }
+
+/* Búsquedas recientes */
+.busqueda-global-recientes { padding: 14px 18px; }
+.busqueda-global-recientes-titulo {
+  font-family: var(--font-display); font-weight: 800; font-size: 11px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+}
+.busqueda-global-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.busqueda-global-chip {
+  border: 1.5px solid var(--gray-200); background: var(--gray-50); color: var(--gray-700);
+  border-radius: 16px; padding: 7px 14px; font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; touch-action: manipulation; transition: all 0.15s;
+}
+.busqueda-global-chip:hover { border-color: var(--red); color: var(--red); background: #FFF5F6; }
+
+/* Estado de carga */
+.busqueda-global-cargando {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 40px 18px; color: var(--red); font-family: var(--font-display); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+
+/* Secciones de resultados por módulo */
+.busqueda-global-seccion { padding: 6px 0; }
+.busqueda-global-seccion + .busqueda-global-seccion { border-top: 1px solid var(--gray-100); }
+.busqueda-global-seccion-titulo {
+  display: flex; align-items: baseline; gap: 6px; padding: 10px 18px 6px;
+  font-family: var(--font-display); font-weight: 900; font-size: 12px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--gray-900);
+}
+.busqueda-global-seccion-count { font-family: 'Barlow', sans-serif; font-weight: 500; font-size: 11px; color: var(--gray-500); text-transform: none; letter-spacing: 0; }
+
+.busqueda-global-item {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; border: none; background: none; cursor: pointer; text-align: left;
+  touch-action: manipulation; min-height: 44px;
+}
+.busqueda-global-item:hover, .busqueda-global-item:focus-visible { background: var(--gray-50); }
+.busqueda-global-item-badge {
+  flex-shrink: 0; font-family: var(--font-display); font-weight: 800; font-size: 9.5px;
+  letter-spacing: 0.5px; text-transform: uppercase; color: #fff;
+  padding: 3px 8px; border-radius: 10px; white-space: nowrap;
+}
+.busqueda-global-item-badge.bg-colchones      { background: #1A3D6D; }
+.busqueda-global-item-badge.bg-muebles        { background: #1B5E20; }
+.busqueda-global-item-badge.bg-revestimientos { background: var(--red); }
+.busqueda-global-item-badge.bg-precios        { background: #E65100; }
+.busqueda-global-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.busqueda-global-item-codigo { font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--gray-500); letter-spacing: 0.5px; }
+.busqueda-global-item-desc {
+  font-size: 14px; color: var(--gray-900); overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 100%;
+}
+.busqueda-global-item-desc strong { color: var(--red); font-weight: 800; }
+.busqueda-global-item-dato { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+.busqueda-global-cantidad { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--gray-700); white-space: nowrap; }
+.busqueda-global-precio { font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--gray-900); white-space: nowrap; }
+.busqueda-global-sin-stock {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--red); background: #FFEBEE; padding: 3px 8px; border-radius: 10px; white-space: nowrap;
+}
+
+.busqueda-global-ver-mas {
+  display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+  padding: 9px 18px; margin-top: 2px; touch-action: manipulation;
+  font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 13px; color: var(--red);
+}
+.busqueda-global-ver-mas:hover { text-decoration: underline; }
+
+/* Resultado al que se hizo scroll desde la búsqueda global: destello breve para
+   ubicarlo de un vistazo entre el resto de las filas de la tabla */
+@keyframes busquedaGlobalFlash {
+  0%, 100% { background: transparent; }
+  25%, 75% { background: #FFF0B3; }
+}
+tr.busqueda-global-flash { animation: busquedaGlobalFlash 1.6s ease; }
+
+@media (max-width: 1024px) {
+  /* vw (no %) porque el ancho real, si no, termina relativo al padding del
+     overlay en vez del viewport — mismo ajuste que .modal en la sección de tablet */
+  .busqueda-global-overlay { padding: 6vh 8px 8px; }
+  .busqueda-global-modal { width: 95vw; max-width: 95vw; max-height: 82vh; }
+}
+@media (max-width: 480px) {
+  .busqueda-global-input { font-size: 16px; } /* evita el auto-zoom de iOS en inputs <16px */
+  .busqueda-global-item-desc { white-space: normal; }
+}
+

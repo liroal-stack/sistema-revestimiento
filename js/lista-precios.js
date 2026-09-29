@@ -176,21 +176,27 @@ function switchListaPreciosFuente(fuenteId) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-async function initListaPrecios() {
-  if (!listaPreciosCargada) {
-    setLoading(true);
-    try {
-      listaPrecios = await sbRequest('GET', '?select=*&order=categoria.asc,descripcion.asc', null, 'lista_precios') || [];
-      console.log(`[lista-precios] Supabase devolvió ${listaPrecios.length} registros de lista_precios`);
-      listaPreciosCargada = true;
-      poblarPreciosFiltroCategoria();
-    } catch(e) {
-      showToast('Error al cargar la lista de precios', 'error');
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+// Separado de initListaPrecios() para que la búsqueda global (js/busqueda-global.js)
+// pueda pedir los datos sin tocar el resto de la UI de esta sub-pestaña (tabs,
+// widget del dólar, resultados) cuando el usuario todavía no entró a Precios.
+async function cargarListaPrecios() {
+  if (listaPreciosCargada) return;
+  setLoading(true);
+  try {
+    listaPrecios = await sbRequest('GET', '?select=*&order=categoria.asc,descripcion.asc', null, 'lista_precios') || [];
+    console.log(`[lista-precios] Supabase devolvió ${listaPrecios.length} registros de lista_precios`);
+    listaPreciosCargada = true;
+    poblarPreciosFiltroCategoria();
+  } catch(e) {
+    showToast('Error al cargar la lista de precios', 'error');
+    console.error(e);
+  } finally {
+    setLoading(false);
   }
+}
+
+async function initListaPrecios() {
+  await cargarListaPrecios();
   renderListaPreciosFuenteTabs();
   renderDolarWidget();
   renderListaPreciosResultados();
@@ -285,11 +291,13 @@ function tokenizarBusquedaPrecios(str) {
   return normalizarBusquedaPrecios(str).split(/\s+/).filter(t => t.length >= 2);
 }
 
-// Envuelve en <mark> las coincidencias de `terminos` dentro de `texto`, sobre el
-// texto original (con sus acentos/mayúsculas tal cual), escapando todo el resto
-// para no introducir HTML. Si un término aparece varias veces, o dos términos se
-// superponen, los rangos se fusionan para no anidar/romper el marcado.
-function resaltarTerminos(texto, terminos) {
+// Envuelve en <mark> (o en la etiqueta que se pase, ej. 'strong' para la
+// búsqueda global en js/busqueda-global.js) las coincidencias de `terminos`
+// dentro de `texto`, sobre el texto original (con sus acentos/mayúsculas tal
+// cual), escapando todo el resto para no introducir HTML. Si un término
+// aparece varias veces, o dos términos se superponen, los rangos se fusionan
+// para no anidar/romper el marcado.
+function resaltarTerminos(texto, terminos, tag = 'mark', clase = 'precio-highlight') {
   if (!terminos || !terminos.length) return esc(texto);
   const normTexto = normalizarPreservandoIndices(texto);
 
@@ -314,9 +322,10 @@ function resaltarTerminos(texto, terminos) {
 
   let html = '';
   let cursor = 0;
+  const claseAttr = clase ? ` class="${clase}"` : '';
   fusionados.forEach(([desde, hasta]) => {
     html += esc(texto.slice(cursor, desde));
-    html += `<mark class="precio-highlight">${esc(texto.slice(desde, hasta))}</mark>`;
+    html += `<${tag}${claseAttr}>${esc(texto.slice(desde, hasta))}</${tag}>`;
     cursor = hasta;
   });
   html += esc(texto.slice(cursor));
@@ -421,7 +430,7 @@ function renderListaPreciosResultados() {
       }
     }
 
-    return `<tr>
+    return `<tr data-id="${item.id}">
       <td data-label="Código"><span class="td-codigo">${esc(item.codigo || '—')}</span></td>
       <td data-label="Descripción"><span class="td-desc">${resaltarTerminos(item.descripcion, terminos)}</span></td>
       <td data-label="Categoría"><span class="date-chip">${esc(item.categoria || '—')}</span></td>
