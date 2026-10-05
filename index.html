@@ -613,11 +613,15 @@
       </div>
 
       <div class="presupuesto-totales">
+        <label class="presupuesto-iva-toggle">
+          <input type="checkbox" id="presupuestoIncluirIva" checked onchange="presupuestoActualizarTotales()">
+          Incluir IVA (21%)
+        </label>
         <div class="presupuesto-total-row">
-          <span class="presupuesto-total-label">Total s/IVA</span>
+          <span class="presupuesto-total-label" id="presupuestoTotalLabel">Total s/IVA</span>
           <span class="presupuesto-total-valor" id="presupuestoTotalSinIva">$ 0,00</span>
         </div>
-        <div class="presupuesto-total-row presupuesto-total-row-iva">
+        <div class="presupuesto-total-row presupuesto-total-row-iva" id="presupuestoTotalConIvaRow">
           <span class="presupuesto-total-label">Total c/IVA (21%)</span>
           <span class="presupuesto-total-valor" id="presupuestoTotalConIva">$ 0,00</span>
         </div>

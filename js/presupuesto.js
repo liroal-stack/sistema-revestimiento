@@ -104,11 +104,22 @@ function presupuestoCalcularTotalSinIva() {
 function presupuestoCalcularTotalConIva() {
   return presupuestoCalcularTotalSinIva() * (1 + PRESUPUESTO_IVA_PCT / 100);
 }
+// El IVA es opcional: si está destildado, el subtotal pasa a ser directamente
+// el total (se oculta la fila "c/IVA" y la fila restante se renombra a "Total").
+function presupuestoIncluyeIva() {
+  const chk = document.getElementById('presupuestoIncluirIva');
+  return chk ? chk.checked : true;
+}
 function presupuestoActualizarTotales() {
   const elSin = document.getElementById('presupuestoTotalSinIva');
   const elCon = document.getElementById('presupuestoTotalConIva');
+  const label = document.getElementById('presupuestoTotalLabel');
+  const filaCon = document.getElementById('presupuestoTotalConIvaRow');
+  const conIva = presupuestoIncluyeIva();
   if (elSin) elSin.textContent = formatPrecio(presupuestoCalcularTotalSinIva());
   if (elCon) elCon.textContent = formatPrecio(presupuestoCalcularTotalConIva());
+  if (label) label.textContent = conIva ? 'Total s/IVA' : 'Total';
+  if (filaCon) filaCon.style.display = conIva ? '' : 'none';
 }
 
 // ── ESTADO / LIMPIAR ──────────────────────────────────────────────────────────
@@ -125,6 +136,7 @@ function presupuestoLimpiar() {
   document.getElementById('presupuestoDireccion').value = '';
   document.getElementById('presupuestoTelefono').value = '';
   document.getElementById('presupuestoFecha').value = formatDate(today());
+  document.getElementById('presupuestoIncluirIva').checked = true;
 
   presupuestoFilas = PRESUPUESTO_FILAS_PRECARGADAS.map(d => presupuestoFilaNueva(d, true));
   for (let i = 0; i < PRESUPUESTO_FILAS_VACIAS_INICIALES; i++) presupuestoFilas.push(presupuestoFilaNueva('', false));
@@ -148,8 +160,10 @@ function presupuestoArmarMensaje() {
   const lineas = presupuestoItemsCargados().map(f =>
     `${f.detalle || '(sin descripción)'}: ${f.cantidad} u. × ${formatPrecio(parseFloat(f.precio))} = ${formatPrecio(presupuestoCalcularSubtotal(f))}`
   );
-  return `Presupuesto MM Espacios\nFecha: ${fecha}\nCliente: ${cliente}\n\n${lineas.join('\n')}\n\n` +
-    `TOTAL s/IVA: ${formatPrecio(presupuestoCalcularTotalSinIva())}\nTOTAL c/IVA: ${formatPrecio(presupuestoCalcularTotalConIva())}`;
+  const totales = presupuestoIncluyeIva()
+    ? `TOTAL s/IVA: ${formatPrecio(presupuestoCalcularTotalSinIva())}\nTOTAL c/IVA: ${formatPrecio(presupuestoCalcularTotalConIva())}`
+    : `TOTAL: ${formatPrecio(presupuestoCalcularTotalSinIva())}`;
+  return `Presupuesto MM Espacios\nFecha: ${fecha}\nCliente: ${cliente}\n\n${lineas.join('\n')}\n\n${totales}`;
 }
 
 function presupuestoArmarMensajeFormal() {
@@ -158,8 +172,10 @@ function presupuestoArmarMensajeFormal() {
   const lineas = presupuestoItemsCargados().map(f =>
     `  - ${f.detalle || '(sin descripción)'}: ${f.cantidad} u. x ${formatPrecio(parseFloat(f.precio))} = ${formatPrecio(presupuestoCalcularSubtotal(f))}`
   );
-  return `Estimado/a${cliente ? ' ' + cliente : ''},\n\nLe hacemos llegar el presupuesto solicitado con fecha ${fecha}.\n\nDetalle:\n${lineas.join('\n')}\n\n` +
-    `TOTAL s/IVA: ${formatPrecio(presupuestoCalcularTotalSinIva())}\nTOTAL c/IVA (${PRESUPUESTO_IVA_PCT}%): ${formatPrecio(presupuestoCalcularTotalConIva())}\n\n` +
+  const totales = presupuestoIncluyeIva()
+    ? `TOTAL s/IVA: ${formatPrecio(presupuestoCalcularTotalSinIva())}\nTOTAL c/IVA (${PRESUPUESTO_IVA_PCT}%): ${formatPrecio(presupuestoCalcularTotalConIva())}`
+    : `TOTAL: ${formatPrecio(presupuestoCalcularTotalSinIva())}`;
+  return `Estimado/a${cliente ? ' ' + cliente : ''},\n\nLe hacemos llegar el presupuesto solicitado con fecha ${fecha}.\n\nDetalle:\n${lineas.join('\n')}\n\n${totales}\n\n` +
     `Quedamos a disposición por cualquier consulta.\n\nSaludos cordiales,\nMM Espacios`;
 }
 
