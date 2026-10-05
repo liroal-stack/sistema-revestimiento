@@ -864,8 +864,17 @@ tbody tr.no-stock:hover  { background: #FFEBEE; }
   box-shadow: 0 2px 8px rgba(200,16,46,0.3);
 }
 @media (max-width: 640px) {
-  .revest-subtabs { width: 100%; }
-  .revest-subtab { flex: 1; padding: 11px 12px; font-size: 12.5px; }
+  /* flex:1 (repartir el ancho en partes iguales) andaba bien con 3 solapas
+     cortas, pero con "Calculadora" (la más larga) el texto no se achica ni
+     hace scroll por su cuenta, y termina empujando TODA la página de ancho —
+     mismo patrón de scroll horizontal propio que ya usan .module-tabs y
+     .precios-fuente-tabs en vez de forzar un ancho igual para todas. */
+  .revest-subtabs {
+    width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .revest-subtabs::-webkit-scrollbar { display: none; }
+  .revest-subtab { flex: 0 0 auto; padding: 11px 16px; font-size: 12.5px; white-space: nowrap; }
 }
 
 /* Fade sutil al mostrar Stock o Ventas */
@@ -1550,5 +1559,124 @@ tr.busqueda-global-flash { animation: busquedaGlobalFlash 1.6s ease; }
 @media (max-width: 480px) {
   .busqueda-global-input { font-size: 16px; } /* evita el auto-zoom de iOS en inputs <16px */
   .busqueda-global-item-desc { white-space: normal; }
+}
+
+/* ── CALCULADORA DE MATERIALES ─────────────────────────────────────────────────
+   Pasos 1-3 a la izquierda, resultado (paso 4) fijo a la derecha en desktop —
+   mismo patrón que .ventas-layout (lista de artículos + carrito). En tablet y
+   mobile todo se apila en una sola columna (≤1024px, a diferencia de Ventas que
+   en tablet sigue en 2 columnas: acá el formulario es secuencial, no una lista
+   larga, así que apilar da más lugar para escribir con el teclado). */
+.calc-layout { display: grid; grid-template-columns: 1fr 360px; gap: 16px; align-items: start; margin-bottom: 24px; }
+.calc-pasos { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.calc-resultado-sticky { position: sticky; top: 128px; min-width: 0; }
+@media (max-width: 1024px) {
+  .calc-layout { grid-template-columns: 1fr; }
+  .calc-resultado-sticky { position: static; }
+}
+
+.calc-paso {
+  display: flex; gap: 14px; background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: 6px; padding: 16px; box-shadow: var(--shadow-sm);
+}
+.calc-paso-numero {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--red); color: #fff; font-family: var(--font-display); font-weight: 900; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.calc-paso-contenido { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.calc-paso-titulo {
+  font-family: var(--font-display); font-weight: 900; font-size: 13px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--gray-900);
+}
+.calc-paso-resultado { position: relative; }
+
+/* Paso 1: producto */
+.calc-producto-selector { position: relative; }
+.calc-producto-selector-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.calc-producto-selector-row .filter-select { min-width: 190px; }
+.calc-search-box { flex: 1; min-width: 180px; }
+.calc-producto-resultados {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 20;
+  background: var(--white); border: 1px solid var(--gray-200); border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-height: 280px; overflow-y: auto;
+}
+.calc-producto-opt {
+  width: 100%; display: flex; align-items: center; gap: 10px; text-align: left;
+  padding: 9px 14px; border: none; background: none; cursor: pointer; touch-action: manipulation;
+  border-bottom: 1px solid var(--gray-100); min-height: 44px;
+}
+.calc-producto-opt:last-child { border-bottom: none; }
+.calc-producto-opt:hover { background: var(--gray-50); }
+.calc-producto-opt-codigo { flex-shrink: 0; font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--gray-500); }
+.calc-producto-opt-desc { flex: 1; min-width: 0; font-size: 14px; color: var(--gray-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calc-producto-opt-prov { flex-shrink: 0; font-size: 11px; color: var(--gray-500); background: var(--gray-100); padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.calc-producto-vacio, .calc-producto-mas { padding: 14px; font-size: 13px; color: var(--gray-500); text-align: center; }
+
+.calc-producto-elegido {
+  background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: 6px; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px; position: relative;
+}
+.calc-producto-elegido-codigo { font-family: var(--font-display); font-weight: 800; font-size: 11px; letter-spacing: 0.5px; color: var(--gray-500); text-transform: uppercase; }
+.calc-producto-elegido-desc { font-weight: 700; color: var(--gray-900); font-size: 15px; padding-right: 110px; }
+.calc-producto-elegido-presentacion { font-size: 13px; color: var(--gray-700); }
+.calc-producto-elegido-cambiar {
+  position: absolute; top: 12px; right: 14px; background: none; border: none; cursor: pointer;
+  color: var(--red); font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 12px;
+  text-decoration: underline; touch-action: manipulation; padding: 4px;
+}
+
+/* Paso 2: medidas */
+.calc-modo-radios { display: flex; gap: 18px; flex-wrap: wrap; }
+.calc-radio { display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--gray-700); cursor: pointer; touch-action: manipulation; }
+.calc-radio input[type="radio"] { width: 18px; height: 18px; accent-color: var(--red); cursor: pointer; }
+.calc-campos-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 400px) { .calc-campos-row { grid-template-columns: 1fr; } }
+
+.calc-aberturas { display: flex; flex-direction: column; gap: 8px; }
+.calc-aberturas-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; font-weight: 700; color: var(--gray-700); }
+.calc-abertura-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap: 8px; align-items: center; }
+@media (max-width: 480px) { .calc-abertura-row { grid-template-columns: 1fr 1fr; grid-template-areas: "desc desc" "ancho alto" "del del"; } }
+.calc-abertura-del {
+  width: 36px; height: 36px; border-radius: 4px; border: 1.5px solid var(--gray-200); background: var(--white);
+  color: var(--gray-500); cursor: pointer; touch-action: manipulation; font-size: 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.calc-abertura-del:hover { border-color: var(--red); color: var(--red); background: #FFF5F6; }
+
+/* Paso 3: desperdicio */
+.calc-checkbox { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gray-700); cursor: pointer; touch-action: manipulation; }
+.calc-checkbox input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--red); cursor: pointer; }
+.calc-desperdicio-input { display: flex; align-items: center; gap: 12px; }
+.calc-desperdicio-input input[type="range"] { flex: 1; accent-color: var(--red); height: 32px; cursor: pointer; }
+.calc-desperdicio-pct { flex-shrink: 0; font-family: var(--font-display); font-weight: 900; font-size: 16px; color: var(--red); min-width: 42px; text-align: right; }
+.calc-m2-desperdicio { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+
+/* Paso 4: resultado — fondo verdoso, precio c/IVA como valor principal en rojo */
+.calc-resultado-panel {
+  background: #F0FFF4; border: 1px solid #CDEFD9; border-radius: 6px; padding: 14px 16px;
+  display: flex; flex-direction: column; min-height: 80px;
+}
+.calc-resultado-panel .empty-state { padding: 20px 10px; }
+.calc-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed #D5EEDD; font-size: 13.5px; }
+.calc-fila:last-of-type { border-bottom: none; }
+.calc-fila-label { color: var(--gray-700); }
+.calc-fila-valor { font-family: var(--font-display); font-weight: 700; color: var(--gray-900); text-align: right; white-space: nowrap; }
+.calc-total-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-top: 10px; margin-top: 4px; border-top: 1.5px solid #CDEFD9; }
+.calc-total-label { font-family: var(--font-display); font-weight: 800; font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--gray-700); }
+.calc-total-valor { font-family: var(--font-display); font-weight: 900; font-size: 18px; color: var(--gray-900); }
+.calc-total-row-principal { padding-top: 12px; }
+.calc-total-row-principal .calc-total-label { color: var(--red); }
+.calc-total-valor-principal { color: var(--red); font-size: 26px; }
+
+.calc-agregar-venta-wrap { margin-top: 14px; }
+.calc-agregar-venta-btn { width: 100%; justify-content: center; padding: 13px; font-size: 15px; }
+
+@media (max-width: 1024px) {
+  .calc-paso { padding: 14px; gap: 10px; }
+  .calc-producto-selector-row { flex-direction: column; }
+  .calc-producto-selector-row .filter-select { width: 100%; min-width: 0; }
+  .calc-producto-elegido-desc { padding-right: 0; }
+  .calc-producto-elegido-cambiar { position: static; align-self: flex-start; margin-top: 2px; }
 }
 

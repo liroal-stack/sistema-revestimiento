@@ -112,6 +112,10 @@
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       Precios
     </button>
+    <button class="revest-subtab" id="subtabCalculadora" onclick="switchRevestSubview('calculadora')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="15.01"/><line x1="8" y1="19" x2="8" y2="19.01"/><line x1="12" y1="19" x2="12" y2="19.01"/><line x1="16" y1="19" x2="16" y2="19.01"/></svg>
+      Calculadora
+    </button>
   </div>
 
   <!-- PROVIDER TABS REVESTIMIENTOS: debajo de la sub-navegación, solo visible
@@ -433,6 +437,123 @@
     </div>
 
   </div><!-- /moduleListaPrecios -->
+
+  <!-- ══ MÓDULO CALCULADORA DE MATERIALES (dentro de Revestimientos) ═══════════ -->
+  <div id="moduleCalculadora" style="display:none;">
+
+    <div class="section-header">
+      <div class="section-title"><span>■</span>Calculadora de Materiales</div>
+    </div>
+
+    <div class="calc-layout">
+      <div class="calc-pasos">
+
+        <!-- PASO 1 — producto -->
+        <div class="calc-paso">
+          <div class="calc-paso-numero">1</div>
+          <div class="calc-paso-contenido">
+            <div class="calc-paso-titulo">Elegí el producto</div>
+
+            <div class="calc-producto-selector" id="calcProductoSelector">
+              <div class="calc-producto-selector-row">
+                <select class="filter-select" id="calcTipo" onchange="calcOnTipoChange()">
+                  <option value="cielorraso">Cielorraso</option>
+                  <option value="revestimiento">Revestimiento de pared</option>
+                  <option value="piso">Piso</option>
+                </select>
+                <div class="search-box calc-search-box">
+                  <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <input type="text" id="calcBuscarProducto" placeholder="Buscar producto..." autocomplete="off"
+                    oninput="calcRenderResultadosBusqueda()" onfocus="calcRenderResultadosBusqueda()">
+                </div>
+              </div>
+              <div class="calc-producto-resultados" id="calcProductoResultados" hidden></div>
+            </div>
+
+            <div class="calc-producto-elegido" id="calcProductoElegido" hidden></div>
+          </div>
+        </div>
+
+        <!-- PASO 2 — medidas -->
+        <div class="calc-paso">
+          <div class="calc-paso-numero">2</div>
+          <div class="calc-paso-contenido">
+            <div class="calc-paso-titulo">Medidas del espacio</div>
+
+            <div class="calc-modo-radios">
+              <label class="calc-radio">
+                <input type="radio" name="calcModo" value="dimensiones" checked onchange="calcOnModoChange()">
+                Dimensiones del ambiente
+              </label>
+              <label class="calc-radio">
+                <input type="radio" name="calcModo" value="m2directos" onchange="calcOnModoChange()">
+                M² directos
+              </label>
+            </div>
+
+            <div id="calcModoDimensiones">
+              <div class="calc-campos-row">
+                <div class="form-group">
+                  <label class="form-label">Ancho del ambiente (m)</label>
+                  <input type="number" step="0.01" min="0" class="form-control" id="calcAncho" placeholder="0.00" oninput="calcActualizarResultado()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Alto del ambiente (m)</label>
+                  <input type="number" step="0.01" min="0" class="form-control" id="calcAlto" placeholder="0.00" oninput="calcActualizarResultado()">
+                </div>
+              </div>
+              <div class="calc-aberturas">
+                <div class="calc-aberturas-header">
+                  <span>Descontar aberturas (opcional)</span>
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="calcAgregarAbertura()">+ Agregar abertura</button>
+                </div>
+                <div id="calcAberturasList"></div>
+              </div>
+            </div>
+
+            <div class="form-group" id="calcModoM2Directos" hidden>
+              <label class="form-label">Metros cuadrados a cubrir</label>
+              <input type="number" step="0.01" min="0" class="form-control" id="calcM2Directos" placeholder="0.00" oninput="calcActualizarResultado()">
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 3 — desperdicio -->
+        <div class="calc-paso">
+          <div class="calc-paso-numero">3</div>
+          <div class="calc-paso-contenido">
+            <div class="calc-paso-titulo">Desperdicio</div>
+            <label class="calc-checkbox">
+              <input type="checkbox" id="calcDesperdicioCheck" checked onchange="calcActualizarResultado()">
+              Agregar % de desperdicio
+            </label>
+            <div class="calc-desperdicio-input" id="calcDesperdicioInputWrap">
+              <input type="range" id="calcDesperdicioPct" min="5" max="20" value="10" step="1" oninput="calcActualizarResultado()">
+              <span class="calc-desperdicio-pct" id="calcDesperdicioPctLabel">10%</span>
+            </div>
+            <div class="calc-m2-desperdicio" id="calcM2ConDesperdicio"></div>
+          </div>
+        </div>
+
+      </div><!-- /calc-pasos -->
+
+      <!-- PASO 4 — resultado -->
+      <div class="calc-resultado-sticky">
+        <div class="calc-paso calc-paso-resultado">
+          <div class="calc-paso-numero">4</div>
+          <div class="calc-paso-contenido">
+            <div class="calc-paso-titulo">Resultado</div>
+            <div class="calc-resultado-panel" id="calcResultadoPanel"></div>
+            <div class="calc-agregar-venta-wrap" id="calcAgregarVentaWrap" hidden>
+              <button type="button" class="btn btn-primary calc-agregar-venta-btn" id="calcAgregarVentaBtn" onclick="calcAgregarAVenta()"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /calc-layout -->
+
+  </div><!-- /moduleCalculadora -->
 
   <!-- ══ MÓDULO HISTORIAL (auditoría, solo lectura) ══════════════════════════ -->
   <div id="moduleHistorial" style="display:none;">
@@ -1051,6 +1172,7 @@
 <script src="js/jarvis.js"></script>
 <script src="js/tablet-ux.js"></script>
 <script src="js/busqueda-global.js"></script>
+<script src="js/calculadora.js"></script>
 <script>
   // Se llama al final porque ui.js (el último archivo en cargar) ya invocó
   // init() en su última línea. init() deja los datos cargando "detrás" de la
