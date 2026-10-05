@@ -1362,8 +1362,16 @@ main { padding-bottom: 100px; }
   /* Header y navegación */
   .module-tab { min-height: 48px; }
   .btn-settings { padding: 10px 14px; min-height: 44px; gap: 8px; font-size: 13px; }
-  .revest-subtabs { gap: 10px; }
-  .revest-subtab { padding: 13px 24px; min-height: 48px; font-size: 14px; }
+  /* Con 5 sub-pestañas (Stock/Ventas/Precios/Calculadora/Presupuesto) más el
+     padding táctil agrandado de abajo, la fila ya no entra en 768px de ancho
+     y desborda la página entera — le damos scroll horizontal propio, mismo
+     patrón que .module-tabs y .revest-subtabs en mobile (≤640px). */
+  .revest-subtabs {
+    gap: 10px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; -ms-overflow-style: none; max-width: 100%;
+  }
+  .revest-subtabs::-webkit-scrollbar { display: none; }
+  .revest-subtab { flex: 0 0 auto; padding: 13px 24px; min-height: 48px; font-size: 14px; white-space: nowrap; }
   .provider-tabs { gap: 10px; padding: 10px; }
   .prov-tab { padding: 12px 20px; min-height: 44px; font-size: 15px; }
   .prov-add { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
@@ -1585,6 +1593,147 @@ tr.busqueda-global-flash { animation: busquedaGlobalFlash 1.6s ease; }
   display: flex; align-items: center; justify-content: center;
 }
 .calc-paso-contenido { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+
+/* ── PRESUPUESTO ────────────────────────────────────────────────────────────────
+   Hoja formal centrada (no usa .calc-layout / grid de 2 columnas: acá no hay un
+   panel de resultado aparte, es un único documento de arriba a abajo), con los
+   4 botones de acción debajo, fuera de la hoja (para que no aparezcan en el PDF
+   ni al imprimir). */
+.presupuesto-hoja {
+  max-width: 820px; margin: 0 auto 18px; background: var(--white);
+  border: 1px solid var(--gray-200); border-radius: 10px; box-shadow: var(--shadow-md);
+  padding: 28px 32px;
+}
+.presupuesto-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.presupuesto-header-izq { display: flex; flex-direction: column; gap: 8px; }
+.presupuesto-logo-mm { max-height: 70px; width: auto; object-fit: contain; display: block; }
+.presupuesto-logo-gerbaudo { max-height: 60px; width: auto; object-fit: contain; display: block; flex-shrink: 0; }
+.presupuesto-contacto { font-size: 11.5px; color: var(--gray-500); }
+
+.presupuesto-titulo-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+.presupuesto-titulo {
+  font-family: var(--font-display); font-weight: 900; font-size: 28px; letter-spacing: 1px;
+  color: var(--gray-900); text-transform: uppercase;
+}
+.presupuesto-fecha-wrap { display: flex; align-items: center; gap: 8px; }
+.presupuesto-fecha-label {
+  font-family: var(--font-display); font-weight: 800; font-size: 11px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--gray-500);
+}
+.presupuesto-fecha-input {
+  border: 1.5px solid var(--gray-200); border-radius: 4px; background: var(--gray-50);
+  font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--gray-900);
+  padding: 7px 10px; width: 118px; text-align: center; outline: none;
+}
+.presupuesto-fecha-input:focus { border-color: var(--red); background: var(--white); }
+
+.presupuesto-sep { height: 2px; background: var(--gray-900); margin: 16px 0 20px; border-radius: 1px; }
+
+.presupuesto-datos-cliente { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+.presupuesto-dato-row { display: flex; align-items: baseline; gap: 8px; }
+.presupuesto-dato-label {
+  font-family: var(--font-display); font-weight: 800; font-size: 12.5px; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--gray-700); flex-shrink: 0;
+}
+.presupuesto-dato-input {
+  flex: 1; min-width: 0; border: none; border-bottom: 1.5px dotted var(--gray-500);
+  background: transparent; font-family: 'Barlow', sans-serif; font-size: 14.5px; color: var(--gray-900);
+  padding: 3px 4px; outline: none;
+}
+.presupuesto-dato-input:focus { border-bottom: 1.5px solid var(--red); }
+.presupuesto-dato-input::placeholder { color: var(--gray-300); }
+
+.presupuesto-tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 4px; }
+.presupuesto-tabla { width: 100%; border-collapse: collapse; min-width: 480px; table-layout: fixed; }
+/* Anchos explícitos: sin esto, Detalle quedaba demasiado angosto y recortaba
+   los nombres de producto más largos ("PIEDRA EXTERIOR POLIURETANO") */
+.presupuesto-tabla th:nth-child(1), .presupuesto-tabla td:nth-child(1) { width: 42%; }
+.presupuesto-tabla th:nth-child(2), .presupuesto-tabla td:nth-child(2) { width: 14%; }
+.presupuesto-tabla th:nth-child(3), .presupuesto-tabla td:nth-child(3) { width: 18%; }
+.presupuesto-tabla th:nth-child(4), .presupuesto-tabla td:nth-child(4) { width: 20%; }
+.presupuesto-th-del, .presupuesto-del-cell { width: 6%; }
+.presupuesto-tabla thead { background: #333333; }
+.presupuesto-tabla th {
+  padding: 10px 12px; font-family: var(--font-display); font-weight: 800; font-size: 11.5px;
+  letter-spacing: 1px; text-transform: uppercase; color: #fff; text-align: left; white-space: nowrap;
+}
+.presupuesto-tabla th.center { text-align: center; }
+.presupuesto-th-del { width: 36px; }
+.presupuesto-tabla tbody tr:nth-child(odd)  { background: var(--white); }
+.presupuesto-tabla tbody tr:nth-child(even) { background: #F9F9F9; }
+.presupuesto-tabla td { padding: 5px 8px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.presupuesto-input {
+  width: 100%; border: 1px solid transparent; border-radius: 3px; background: transparent;
+  font-family: 'Barlow', sans-serif; font-size: 13.5px; color: var(--gray-900);
+  padding: 6px 7px; outline: none; -webkit-appearance: none;
+}
+.presupuesto-input:hover { border-color: var(--gray-200); }
+.presupuesto-input:focus { border-color: var(--red); background: var(--white); }
+.presupuesto-num { text-align: right; }
+.presupuesto-subtotal {
+  font-family: var(--font-display); font-weight: 700; font-size: 13.5px; color: var(--gray-900);
+  text-align: right; white-space: nowrap; padding-right: 10px;
+}
+.presupuesto-del-cell { text-align: center; }
+.presupuesto-del {
+  width: 26px; height: 26px; border-radius: 50%; border: none; background: transparent;
+  color: var(--gray-300); cursor: pointer; font-size: 13px; touch-action: manipulation;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.presupuesto-del:hover { background: #FFEBEE; color: var(--red); }
+
+.presupuesto-totales { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-top: 16px; padding-top: 12px; border-top: 1.5px solid var(--gray-200); }
+.presupuesto-total-row { display: flex; align-items: baseline; gap: 14px; }
+.presupuesto-total-label { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--gray-700); }
+.presupuesto-total-valor { font-family: var(--font-display); font-weight: 900; font-size: 17px; color: var(--gray-900); min-width: 130px; text-align: right; }
+.presupuesto-total-row-iva .presupuesto-total-label { color: var(--red); }
+.presupuesto-total-row-iva .presupuesto-total-valor { color: var(--red); font-size: 22px; }
+
+/* Mientras se captura la hoja para el PDF: sin botones de borrar ni bordes de
+   edición, para que quede "impreso" y no se note que es un formulario */
+.presupuesto-capturando .presupuesto-del { visibility: hidden; }
+.presupuesto-capturando .presupuesto-input,
+.presupuesto-capturando .presupuesto-dato-input,
+.presupuesto-capturando .presupuesto-fecha-input { border-color: transparent !important; background: transparent !important; }
+
+.presupuesto-acciones { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 820px; margin: 0 auto; }
+.presupuesto-btn-whatsapp { background: #25D366; color: #fff; box-shadow: 0 2px 8px rgba(37,211,102,0.3); }
+.presupuesto-btn-whatsapp:hover { background: #1DA851; }
+.presupuesto-btn-email { background: #EA4335; color: #fff; box-shadow: 0 2px 8px rgba(234,67,53,0.3); }
+.presupuesto-btn-email:hover { background: #C5271B; }
+
+@media (max-width: 1024px) {
+  .presupuesto-hoja { padding: 20px; }
+  .presupuesto-titulo { font-size: 22px; }
+  .presupuesto-logo-mm { max-height: 54px; }
+  .presupuesto-logo-gerbaudo { max-height: 46px; }
+  .presupuesto-acciones { flex-direction: column; }
+  .presupuesto-acciones .btn { width: 100%; justify-content: center; }
+}
+@media (max-width: 640px) {
+  /* Detalle se queda ancho, las otras tres se achican al mínimo legible */
+  .presupuesto-tabla { min-width: 0; width: 100%; table-layout: fixed; }
+  .presupuesto-tabla th:nth-child(1), .presupuesto-tabla td:nth-child(1) { width: auto; }
+  .presupuesto-tabla th:nth-child(2), .presupuesto-tabla td:nth-child(2),
+  .presupuesto-tabla th:nth-child(3), .presupuesto-tabla td:nth-child(3) { width: 54px; }
+  .presupuesto-tabla th:nth-child(4), .presupuesto-tabla td:nth-child(4) { width: 64px; }
+  .presupuesto-th-del, .presupuesto-del-cell { width: 26px; }
+  .presupuesto-tabla th { padding: 8px 5px; font-size: 9.5px; }
+  .presupuesto-input { padding: 5px 3px; font-size: 12.5px; }
+  .presupuesto-subtotal { font-size: 11.5px; padding-right: 4px; }
+  .presupuesto-titulo-row { flex-direction: column; align-items: flex-start; }
+}
+
+@media print {
+  header, .module-tabs, .revest-subtabs, .provider-tabs, .accent-line,
+  .jarvis-btn, .jarvis-banner, .toast-container, .presupuesto-acciones,
+  #loadingOverlay { display: none !important; }
+  body { background: #fff !important; }
+  main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+  .presupuesto-hoja { box-shadow: none !important; border: 1px solid #ccc !important; margin: 0 !important; max-width: 100% !important; }
+  .presupuesto-del { display: none !important; }
+  .presupuesto-input, .presupuesto-dato-input, .presupuesto-fecha-input { border-color: transparent !important; }
+}
 .calc-paso-titulo {
   font-family: var(--font-display); font-weight: 900; font-size: 13px;
   letter-spacing: 1px; text-transform: uppercase; color: var(--gray-900);

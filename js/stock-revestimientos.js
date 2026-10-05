@@ -57,13 +57,14 @@ async function seedRevestimientos() {
 }
 
 // ── SUB-NAVEGACIÓN STOCK / VENTAS / PRECIOS ───────────────────────────────────
-let revestSubview = 'stock'; // 'stock' | 'ventas' | 'precios' | 'calculadora' — se recuerda mientras dure la sesión
+let revestSubview = 'stock'; // 'stock' | 'ventas' | 'precios' | 'calculadora' | 'presupuesto' — se recuerda mientras dure la sesión
 
 const REVEST_SUBVIEWS = {
   stock:       { tabId: 'subtabStock',       moduleId: 'moduleStock' },
   ventas:      { tabId: 'subtabVentas',      moduleId: 'moduleVentas' },
   precios:     { tabId: 'subtabPrecios',     moduleId: 'moduleListaPrecios' },
-  calculadora: { tabId: 'subtabCalculadora', moduleId: 'moduleCalculadora' }
+  calculadora: { tabId: 'subtabCalculadora', moduleId: 'moduleCalculadora' },
+  presupuesto: { tabId: 'subtabPresupuesto', moduleId: 'modulePresupuesto' }
 };
 
 // Sincroniza el DOM (pestañas activas, secciones visibles + fade) con revestSubview
@@ -98,6 +99,7 @@ function applyRevestSubview(opts) {
   if (view === 'ventas') initVentas(opts.preserveCart);
   else if (view === 'precios') initListaPrecios();
   else if (view === 'calculadora') initCalculadora();
+  else if (view === 'presupuesto') initPresupuesto();
   else renderTable();
 }
 

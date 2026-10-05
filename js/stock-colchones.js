@@ -36,6 +36,15 @@ function getActiveProvName() {
 async function switchModule(mod) {
   if (!getPermissions().includes(mod)) return; // sin permiso para este módulo
   if (activeModule === mod) return;
+
+  // El Presupuesto es la única sub-vista con un "estado de trabajo" que tiene
+  // sentido no perder sin avisar (un cliente y una tabla llenándose a mano);
+  // el resto (carrito, búsquedas, calculadora) ya se banca perderse sin aviso.
+  if (activeModule === 'revestimientos' && revestSubview === 'presupuesto' &&
+      typeof presupuestoTieneDatos === 'function' && presupuestoTieneDatos()) {
+    if (!confirm('Tenés un presupuesto con datos sin enviar. ¿Salir igual?')) return;
+  }
+
   activeModule = mod;
 
   document.getElementById('tabColchones').classList.toggle('active',      mod === 'colchones');
@@ -53,8 +62,16 @@ async function switchModule(mod) {
   // salir del módulo por completo.
   document.getElementById('revestSubtabs').style.display = mod === 'revestimientos' ? 'flex' : 'none';
   if (mod !== 'revestimientos') {
-    document.getElementById('moduleVentas').style.display = 'none';
-    document.getElementById('moduleListaPrecios').style.display = 'none';
+    // Oculta todas las sub-vistas de Revestimientos salvo Stock (comparte
+    // #moduleStock con Colchones/Muebles, lo maneja el bloque de abajo). Se
+    // recorre REVEST_SUBVIEWS en vez de nombrar cada módulo a mano para que
+    // una sub-pestaña nueva no quede visible por encima de otro módulo por
+    // simplemente olvidarse de agregarla acá (pasó con Calculadora).
+    Object.entries(REVEST_SUBVIEWS).forEach(([key, cfg]) => {
+      if (key === 'stock') return;
+      const el = document.getElementById(cfg.moduleId);
+      if (el) el.style.display = 'none';
+    });
     document.getElementById('providerTabsRev').classList.add('revest-provider-collapsed');
   }
 
