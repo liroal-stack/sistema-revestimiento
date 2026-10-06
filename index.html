@@ -449,113 +449,178 @@
       <div class="section-title"><span>■</span>Calculadora de Materiales</div>
     </div>
 
-    <div class="calc-layout">
-      <div class="calc-pasos">
+    <!-- ═══ SECCIÓN 1 — GESTIÓN DE MEDIDAS ═══════════════════════════════════ -->
+    <div class="calc-seccion">
+      <div class="calc-seccion-titulo">📏 Gestión de Medidas</div>
+      <div class="calc-seccion-sep"></div>
 
-        <!-- PASO 1 — producto -->
-        <div class="calc-paso">
-          <div class="calc-paso-numero">1</div>
-          <div class="calc-paso-contenido">
-            <div class="calc-paso-titulo">Elegí el producto</div>
-
-            <div class="calc-producto-selector" id="calcProductoSelector">
-              <div class="calc-producto-selector-row">
-                <select class="filter-select" id="calcTipo" onchange="calcOnTipoChange()">
-                  <option value="cielorraso">Cielorraso</option>
-                  <option value="revestimiento">Revestimiento de pared</option>
-                  <option value="piso">Piso</option>
-                </select>
-                <div class="search-box calc-search-box">
-                  <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                  <input type="text" id="calcBuscarProducto" placeholder="Buscar producto..." autocomplete="off"
-                    oninput="calcRenderResultadosBusqueda()" onfocus="calcRenderResultadosBusqueda()">
-                </div>
-              </div>
-              <div class="calc-producto-resultados" id="calcProductoResultados" hidden></div>
-            </div>
-
-            <div class="calc-producto-elegido" id="calcProductoElegido" hidden></div>
+      <div class="calc-medida-form">
+        <div class="form-group">
+          <label class="form-label">Nombre del artículo</label>
+          <input type="text" class="form-control" id="medidaNombre" placeholder="Ej: Wall Panel 155mm" oninput="medidaActualizarPreview()">
+        </div>
+        <div class="calc-medida-form-row">
+          <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <select class="form-control" id="medidaTipo">
+              <option value="revestimiento">Revestimiento</option>
+              <option value="cielorraso">Cielorraso</option>
+              <option value="piso">Piso</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ancho (mm)</label>
+            <input type="number" min="0" step="0.1" class="form-control" id="medidaAncho" placeholder="ej: 155" oninput="medidaActualizarPreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Largo (mm)</label>
+            <input type="number" min="0" step="0.1" class="form-control" id="medidaLargo" placeholder="ej: 2900" oninput="medidaActualizarPreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unidades por caja</label>
+            <input type="number" min="0" step="1" class="form-control" id="medidaUnidadesPorCaja" placeholder="ej: 18 — vacío si es por unidad">
           </div>
         </div>
-
-        <!-- PASO 2 — medidas -->
-        <div class="calc-paso">
-          <div class="calc-paso-numero">2</div>
-          <div class="calc-paso-contenido">
-            <div class="calc-paso-titulo">Medidas del espacio</div>
-
-            <div class="calc-modo-radios">
-              <label class="calc-radio">
-                <input type="radio" name="calcModo" value="dimensiones" checked onchange="calcOnModoChange()">
-                Dimensiones del ambiente
-              </label>
-              <label class="calc-radio">
-                <input type="radio" name="calcModo" value="m2directos" onchange="calcOnModoChange()">
-                M² directos
-              </label>
-            </div>
-
-            <div id="calcModoDimensiones">
-              <div class="calc-campos-row">
-                <div class="form-group">
-                  <label class="form-label">Ancho del ambiente (m)</label>
-                  <input type="number" step="0.01" min="0" class="form-control" id="calcAncho" placeholder="0.00" oninput="calcActualizarResultado()">
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Alto del ambiente (m)</label>
-                  <input type="number" step="0.01" min="0" class="form-control" id="calcAlto" placeholder="0.00" oninput="calcActualizarResultado()">
-                </div>
-              </div>
-              <div class="calc-aberturas">
-                <div class="calc-aberturas-header">
-                  <span>Descontar aberturas (opcional)</span>
-                  <button type="button" class="btn btn-ghost btn-sm" onclick="calcAgregarAbertura()">+ Agregar abertura</button>
-                </div>
-                <div id="calcAberturasList"></div>
-              </div>
-            </div>
-
-            <div class="form-group" id="calcModoM2Directos" hidden>
-              <label class="form-label">Metros cuadrados a cubrir</label>
-              <input type="number" step="0.01" min="0" class="form-control" id="calcM2Directos" placeholder="0.00" oninput="calcActualizarResultado()">
-            </div>
-          </div>
+        <div class="form-group">
+          <label class="form-label">Notas (opcional)</label>
+          <input type="text" class="form-control" id="medidaNotas" placeholder="Ej: Solo disponible en NEGRO y GRIS MARENGO">
         </div>
 
-        <!-- PASO 3 — desperdicio -->
-        <div class="calc-paso">
-          <div class="calc-paso-numero">3</div>
-          <div class="calc-paso-contenido">
-            <div class="calc-paso-titulo">Desperdicio</div>
-            <label class="calc-checkbox">
-              <input type="checkbox" id="calcDesperdicioCheck" checked onchange="calcActualizarResultado()">
-              Agregar % de desperdicio
-            </label>
-            <div class="calc-desperdicio-input" id="calcDesperdicioInputWrap">
-              <input type="range" id="calcDesperdicioPct" min="5" max="20" value="10" step="1" oninput="calcActualizarResultado()">
-              <span class="calc-desperdicio-pct" id="calcDesperdicioPctLabel">10%</span>
-            </div>
-            <div class="calc-m2-desperdicio" id="calcM2ConDesperdicio"></div>
-          </div>
-        </div>
+        <div class="calc-medida-preview" id="medidaPreview"></div>
 
-      </div><!-- /calc-pasos -->
-
-      <!-- PASO 4 — resultado -->
-      <div class="calc-resultado-sticky">
-        <div class="calc-paso calc-paso-resultado">
-          <div class="calc-paso-numero">4</div>
-          <div class="calc-paso-contenido">
-            <div class="calc-paso-titulo">Resultado</div>
-            <div class="calc-resultado-panel" id="calcResultadoPanel"></div>
-            <div class="calc-agregar-venta-wrap" id="calcAgregarVentaWrap" hidden>
-              <button type="button" class="btn btn-primary calc-agregar-venta-btn" id="calcAgregarVentaBtn" onclick="calcAgregarAVenta()"></button>
-            </div>
-          </div>
+        <div class="calc-medida-form-acciones">
+          <button type="button" class="btn btn-ghost" id="medidaCancelarBtn" onclick="medidaCancelarEdicion()" hidden>Cancelar</button>
+          <button type="button" class="btn btn-primary" id="medidaGuardarBtn" onclick="medidaGuardar()">Guardar medida</button>
         </div>
       </div>
 
-    </div><!-- /calc-layout -->
+      <div class="calc-medida-tabla-wrap">
+        <table class="calc-medida-tabla">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th class="center">Ancho</th>
+              <th class="center">Largo</th>
+              <th class="center">M² / unidad</th>
+              <th class="center">Unid./caja</th>
+              <th>Notas</th>
+              <th class="calc-medida-th-acciones"></th>
+            </tr>
+          </thead>
+          <tbody id="medidasTablaBody"></tbody>
+        </table>
+      </div>
+    </div><!-- /calc-seccion gestión de medidas -->
+
+    <!-- ═══ SECCIÓN 2 — CALCULADORA ═══════════════════════════════════════════ -->
+    <div class="calc-seccion">
+      <div class="calc-seccion-titulo">🧮 Calculadora</div>
+      <div class="calc-seccion-sep"></div>
+
+      <div class="calc-layout">
+        <div class="calc-pasos">
+
+          <!-- PASO 1 — artículo -->
+          <div class="calc-paso">
+            <div class="calc-paso-numero">1</div>
+            <div class="calc-paso-contenido">
+              <div class="calc-paso-titulo">Seleccioná el artículo</div>
+
+              <div class="empty-state" id="calcSinArticulos" hidden>
+                <span class="icon">📏</span>
+                <p>Todavía no cargaste medidas de ningún artículo</p>
+                <button type="button" class="btn btn-primary btn-sm" onclick="calcIrAGestionMedidas()">Cargar mi primer artículo</button>
+              </div>
+
+              <div id="calcConArticulos" hidden>
+                <select class="form-control" id="calcArticuloSelect" onchange="calcOnArticuloChange()">
+                  <option value="">Elegí un artículo...</option>
+                </select>
+                <div class="calc-articulo-info" id="calcArticuloInfo" hidden></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PASO 2 — medidas -->
+          <div class="calc-paso">
+            <div class="calc-paso-numero">2</div>
+            <div class="calc-paso-contenido">
+              <div class="calc-paso-titulo">Superficie a cubrir</div>
+
+              <div class="calc-modo-radios">
+                <label class="calc-radio">
+                  <input type="radio" name="calcModo" value="dimensiones" checked onchange="calcOnModoChange()">
+                  Dimensiones del ambiente
+                </label>
+                <label class="calc-radio">
+                  <input type="radio" name="calcModo" value="m2directos" onchange="calcOnModoChange()">
+                  M² directos
+                </label>
+              </div>
+
+              <div id="calcModoDimensiones">
+                <div class="calc-campos-row">
+                  <div class="form-group">
+                    <label class="form-label">Ancho del ambiente (m)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="calcAncho" placeholder="0.00" oninput="calcActualizarResultado()">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Alto / Largo del ambiente (m)</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="calcAlto" placeholder="0.00" oninput="calcActualizarResultado()">
+                  </div>
+                </div>
+                <div class="calc-aberturas">
+                  <div class="calc-aberturas-header">
+                    <span>Descontar aberturas (opcional)</span>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="calcAgregarAbertura()">+ Agregar abertura</button>
+                  </div>
+                  <div id="calcAberturasList"></div>
+                </div>
+              </div>
+
+              <div class="form-group" id="calcModoM2Directos" hidden>
+                <label class="form-label">Metros cuadrados a cubrir</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="calcM2Directos" placeholder="0.00" oninput="calcActualizarResultado()">
+              </div>
+            </div>
+          </div>
+
+          <!-- PASO 3 — desperdicio -->
+          <div class="calc-paso">
+            <div class="calc-paso-numero">3</div>
+            <div class="calc-paso-contenido">
+              <div class="calc-paso-titulo">Desperdicio</div>
+              <label class="calc-checkbox">
+                <input type="checkbox" id="calcDesperdicioCheck" onchange="calcActualizarResultado()">
+                Agregar % de desperdicio
+              </label>
+              <div class="calc-desperdicio-input" id="calcDesperdicioInputWrap" hidden>
+                <input type="range" id="calcDesperdicioPct" min="5" max="20" value="10" step="1" oninput="calcActualizarResultado()">
+                <span class="calc-desperdicio-pct" id="calcDesperdicioPctLabel">10%</span>
+              </div>
+              <div class="calc-m2-desperdicio" id="calcM2ConDesperdicio"></div>
+            </div>
+          </div>
+
+        </div><!-- /calc-pasos -->
+
+        <!-- PASO 4 — resultado -->
+        <div class="calc-resultado-sticky">
+          <div class="calc-paso calc-paso-resultado">
+            <div class="calc-paso-numero">4</div>
+            <div class="calc-paso-contenido">
+              <div class="calc-paso-titulo">Resultado</div>
+              <div class="calc-resultado-panel" id="calcResultadoPanel"></div>
+              <div class="calc-agregar-presupuesto-wrap" id="calcAgregarPresupuestoWrap" hidden>
+                <button type="button" class="btn btn-primary calc-agregar-presupuesto-btn" onclick="calcAgregarAlPresupuesto()">Agregar al presupuesto</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /calc-layout -->
+    </div><!-- /calc-seccion calculadora -->
 
   </div><!-- /moduleCalculadora -->
 

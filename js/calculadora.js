@@ -1,33 +1,30 @@
 // ── CALCULADORA DE MATERIALES (dentro de Revestimientos) ─────────────────────
-// Combina dimensiones_productos (medidas/cobertura de cada presentación) con
-// lista_precios (precio) para calcular cuántas unidades o cajas hacen falta
-// para cubrir un ambiente, y el precio total. Reutiliza los loaders ya
-// factorizados de lista-precios.js y ventas.js en vez de duplicar consultas.
+// Sección 1: alta/edición/baja de medidas de artículos (tabla medidas_articulos
+// en Supabase). m2_por_unidad es una columna GENERATED ALWAYS AS por la base
+// — nunca se manda en el insert/update, la calcula y la devuelve Postgres solo.
+// Sección 2: calculadora de cuántas unidades o cajas hacen falta para cubrir
+// una superficie, sin precios. El resultado se puede enviar como ítem (sin
+// precio unitario) a la sub-pestaña Presupuesto.
 
-let calcProductos        = []; // dimensiones_productos ya cruzado con su fila de lista_precios: { ...dim, lp }
-let calcProductosCargados = false;
-let calcAberturas        = []; // [{ descripcion, ancho, alto }]
-let calcProductoSeleccionado = null; // uno de calcProductos
-let calcUltimoResultado  = null;     // { cantidad, esCaja } del último cálculo renderizado
+const MEDIDA_TIPO_LABEL = { revestimiento: 'Revestimiento', cielorraso: 'Cielorraso', piso: 'Piso' };
+
+let medidasArticulos = []; // filas de medidas_articulos
+let medidasCargadas  = false;
+let medidaEditandoId = null; // id de la medida en edición, o null si el formulario es para un alta nueva
+
+let calcArticuloSeleccionado = null; // una fila de medidasArticulos
+let calcAberturas            = [];   // [{ descripcion, ancho, alto }]
+let calcUltimoResultado      = null; // { cantidad, esCaja, nombre } del último cálculo renderizado
 
 // ── CARGA (lazy, una sola vez por sesión) ────────────────────────────────────
-async function cargarCalculadoraProductos() {
-  if (calcProductosCargados) return;
+async function cargarMedidasArticulos() {
+  if (medidasCargadas) return;
   setLoading(true);
   try {
-    const [dims] = await Promise.all([
-      sbRequest('GET', '?select=*', null, 'dimensiones_productos'),
-      cargarListaPrecios() // ya trae/cachea listaPrecios (ver js/lista-precios.js)
-    ]);
-    calcProductos = (dims || [])
-      .map(d => {
-        const lp = listaPrecios.find(p => p.codigo === d.lista_precios_codigo && p.proveedor === d.lista_precios_proveedor);
-        return lp ? { ...d, lp } : null;
-      })
-      .filter(Boolean); // si algún vínculo quedó roto, se ignora esa fila en vez de romper la calculadora
-    calcProductosCargados = true;
+    medidasArticulos = await sbRequest('GET', '?select=*&order=nombre.asc', null, 'medidas_articulos') || [];
+    medidasCargadas = true;
   } catch (e) {
-    showToast('Error al cargar los productos de la calculadora', 'error');
+    showToast('Error al cargar las medidas de artículos', 'error');
     console.error(e);
   } finally {
     setLoading(false);
@@ -35,98 +32,209 @@ async function cargarCalculadoraProductos() {
 }
 
 async function initCalculadora() {
-  await cargarCalculadoraProductos();
-  try { await cargarVentaStock(); } catch (e) { /* "Agregar a venta" simplemente no aparece si esto falla */ }
+  await cargarMedidasArticulos();
+  medidasRenderTabla();
+  medidaActualizarPreview();
   calcRenderAberturas();
+  calcPoblarSelectorArticulos();
   calcActualizarResultado();
 }
 
-// ── PASO 1: SELECCIÓN DE PRODUCTO ────────────────────────────────────────────
-function calcOnTipoChange() {
-  calcRenderResultadosBusqueda();
+function formatM2(n) {
+  return (Math.round((n || 0) * 100) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
 }
 
-function calcRenderResultadosBusqueda() {
-  const cont = document.getElementById('calcProductoResultados');
-  if (!cont) return;
-  const tipo = document.getElementById('calcTipo')?.value;
-  const tokens = tokenizarBusquedaPrecios(document.getElementById('calcBuscarProducto')?.value || '');
+// ══ SECCIÓN 1 — GESTIÓN DE MEDIDAS ══════════════════════════════════════════
+function medidaM2PorUnidad(anchoMm, largoMm) {
+  return (anchoMm / 1000) * (largoMm / 1000);
+}
 
-  let items = calcProductos.filter(d => d.tipo === tipo);
-  if (tokens.length) {
-    items = items.filter(d => {
-      const haystack = normalizarPreservandoIndices(`${d.lp.descripcion} ${d.lista_precios_codigo} ${d.lista_precios_proveedor}`);
-      return tokens.every(t => haystack.includes(t));
-    });
+function medidaActualizarPreview() {
+  const preview = document.getElementById('medidaPreview');
+  if (!preview) return;
+  const ancho = parseFloat(document.getElementById('medidaAncho')?.value);
+  const largo = parseFloat(document.getElementById('medidaLargo')?.value);
+  if (!ancho || !largo) { preview.textContent = ''; return; }
+  const m2 = medidaM2PorUnidad(ancho, largo);
+  preview.textContent = `Esta tira cubre ${m2.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} m² por unidad`;
+}
+
+function medidaLimpiarFormulario() {
+  document.getElementById('medidaNombre').value = '';
+  document.getElementById('medidaTipo').value = 'revestimiento';
+  document.getElementById('medidaAncho').value = '';
+  document.getElementById('medidaLargo').value = '';
+  document.getElementById('medidaUnidadesPorCaja').value = '';
+  document.getElementById('medidaNotas').value = '';
+  medidaEditandoId = null;
+  document.getElementById('medidaCancelarBtn').hidden = true;
+  document.getElementById('medidaGuardarBtn').textContent = 'Guardar medida';
+  medidaActualizarPreview();
+}
+
+function medidaCancelarEdicion() {
+  medidaLimpiarFormulario();
+}
+
+async function medidaGuardar() {
+  const nombre = document.getElementById('medidaNombre').value.trim();
+  const tipo = document.getElementById('medidaTipo').value;
+  const ancho = parseFloat(document.getElementById('medidaAncho').value);
+  const largo = parseFloat(document.getElementById('medidaLargo').value);
+  const unidadesPorCajaRaw = document.getElementById('medidaUnidadesPorCaja').value.trim();
+  const notas = document.getElementById('medidaNotas').value.trim();
+
+  if (!nombre) { showToast('Ingresá el nombre del artículo', 'error'); return; }
+  if (!ancho || ancho <= 0) { showToast('Ingresá un ancho válido', 'error'); return; }
+  if (!largo || largo <= 0) { showToast('Ingresá un largo válido', 'error'); return; }
+
+  // m2_por_unidad NO se manda: es GENERATED ALWAYS en la tabla, Postgres la calcula sola
+  const payload = {
+    nombre, tipo, ancho_mm: ancho, largo_mm: largo,
+    unidades_por_caja: unidadesPorCajaRaw ? parseInt(unidadesPorCajaRaw, 10) : null,
+    notas: notas || null
+  };
+
+  setLoading(true);
+  try {
+    if (medidaEditandoId) {
+      const updated = await sbRequest('PATCH', `?id=eq.${medidaEditandoId}`, payload, 'medidas_articulos');
+      const idx = medidasArticulos.findIndex(m => m.id === medidaEditandoId);
+      if (idx >= 0) medidasArticulos[idx] = updated[0];
+      showToast('Medida actualizada', 'success');
+    } else {
+      const inserted = await sbRequest('POST', '', payload, 'medidas_articulos');
+      medidasArticulos.push(inserted[0]);
+      showToast('Medida guardada', 'success');
+    }
+    medidasArticulos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    medidaLimpiarFormulario();
+    medidasRenderTabla();
+    calcPoblarSelectorArticulos();
+  } catch (e) {
+    showToast('Error al guardar la medida', 'error');
+    console.error(e);
+  } finally {
+    setLoading(false);
   }
-  const total = items.length;
-  items = items.slice(0, 20); // la lista es para elegir, no para leer entera — se recorta igual que en otros buscadores del sistema
+}
 
-  if (!total) {
-    cont.innerHTML = `<div class="calc-producto-vacio">No hay productos con dimensiones cargadas para este filtro</div>`;
-  } else {
-    cont.innerHTML = items.map(d => `
-      <button type="button" class="calc-producto-opt"
-        onclick="calcSeleccionarProducto('${d.lista_precios_codigo.replace(/'/g, "\\'")}','${d.lista_precios_proveedor.replace(/'/g, "\\'")}')">
-        <span class="calc-producto-opt-codigo">${esc(d.lista_precios_codigo)}</span>
-        <span class="calc-producto-opt-desc">${esc(d.lp.descripcion)}</span>
-        <span class="calc-producto-opt-prov">${esc(d.lista_precios_proveedor)}</span>
-      </button>`).join('') + (total > items.length ? `<div class="calc-producto-mas">y ${total - items.length} más — refiná la búsqueda</div>` : '');
+function medidaEditar(id) {
+  const m = medidasArticulos.find(x => x.id === id);
+  if (!m) return;
+  medidaEditandoId = id;
+  document.getElementById('medidaNombre').value = m.nombre;
+  document.getElementById('medidaTipo').value = m.tipo;
+  document.getElementById('medidaAncho').value = m.ancho_mm;
+  document.getElementById('medidaLargo').value = m.largo_mm;
+  document.getElementById('medidaUnidadesPorCaja').value = m.unidades_por_caja ?? '';
+  document.getElementById('medidaNotas').value = m.notas || '';
+  document.getElementById('medidaCancelarBtn').hidden = false;
+  document.getElementById('medidaGuardarBtn').textContent = 'Guardar cambios';
+  medidaActualizarPreview();
+  document.getElementById('medidaNombre').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function medidaEliminar(id) {
+  const m = medidasArticulos.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm(`¿Eliminar "${m.nombre}"?`)) return;
+
+  setLoading(true);
+  try {
+    await sbRequest('DELETE', `?id=eq.${id}`, null, 'medidas_articulos');
+    medidasArticulos = medidasArticulos.filter(x => x.id !== id);
+    if (medidaEditandoId === id) medidaLimpiarFormulario();
+    medidasRenderTabla();
+    calcPoblarSelectorArticulos();
+    if (calcArticuloSeleccionado?.id === id) {
+      calcArticuloSeleccionado = null;
+      const select = document.getElementById('calcArticuloSelect');
+      if (select) select.value = '';
+      calcRenderArticuloInfo();
+      calcActualizarResultado();
+    }
+    showToast('Medida eliminada', 'info');
+  } catch (e) {
+    showToast('Error al eliminar la medida', 'error');
+    console.error(e);
+  } finally {
+    setLoading(false);
   }
-  cont.hidden = false;
 }
 
-function calcSeleccionarProducto(codigo, proveedor) {
-  const d = calcProductos.find(x => x.lista_precios_codigo === codigo && x.lista_precios_proveedor === proveedor);
-  if (!d) return;
-  calcProductoSeleccionado = d;
+function medidasRenderTabla() {
+  const tbody = document.getElementById('medidasTablaBody');
+  if (!tbody) return;
+  if (!medidasArticulos.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="icon">📏</span><p>No hay medidas guardadas. Agregá tu primer artículo arriba.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = medidasArticulos.map(m => `
+    <tr>
+      <td>${esc(m.nombre)}</td>
+      <td>${esc(MEDIDA_TIPO_LABEL[m.tipo] || m.tipo)}</td>
+      <td class="center">${esc(m.ancho_mm)} mm</td>
+      <td class="center">${esc(m.largo_mm)} mm</td>
+      <td class="center">${formatM2(m.m2_por_unidad)}</td>
+      <td class="center">${m.unidades_por_caja ?? '—'}</td>
+      <td>${esc(m.notas || '—')}</td>
+      <td class="calc-medida-acciones">
+        <button type="button" class="btn btn-ghost btn-sm btn-icon" onclick="medidaEditar(${m.id})" title="Editar" aria-label="Editar">✏</button>
+        <button type="button" class="btn btn-danger btn-sm btn-icon" onclick="medidaEliminar(${m.id})" title="Eliminar" aria-label="Eliminar">🗑</button>
+      </td>
+    </tr>`).join('');
+}
 
-  const resultados = document.getElementById('calcProductoResultados');
-  if (resultados) resultados.hidden = true;
-  const buscar = document.getElementById('calcBuscarProducto');
-  if (buscar) buscar.value = '';
-  document.getElementById('calcProductoSelector').hidden = true;
+// ══ SECCIÓN 2 — CALCULADORA ══════════════════════════════════════════════════
+// PASO 1: artículo
+function calcPoblarSelectorArticulos() {
+  const select = document.getElementById('calcArticuloSelect');
+  const sinArticulos = document.getElementById('calcSinArticulos');
+  const conArticulos = document.getElementById('calcConArticulos');
+  if (!select) return;
 
-  calcRenderProductoElegido();
+  const hay = medidasArticulos.length > 0;
+  if (sinArticulos) sinArticulos.hidden = hay;
+  if (conArticulos) conArticulos.hidden = !hay;
+  if (!hay) return;
+
+  const valorActual = select.value;
+  select.innerHTML = `<option value="">Elegí un artículo...</option>` +
+    medidasArticulos.map(m => `<option value="${m.id}">${esc(m.nombre)}</option>`).join('');
+  if (valorActual && medidasArticulos.some(m => String(m.id) === valorActual)) select.value = valorActual;
+}
+
+function calcIrAGestionMedidas() {
+  const campo = document.getElementById('medidaNombre');
+  if (!campo) return;
+  campo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  campo.focus();
+}
+
+function calcOnArticuloChange() {
+  const id = document.getElementById('calcArticuloSelect')?.value;
+  calcArticuloSeleccionado = medidasArticulos.find(m => String(m.id) === String(id)) || null;
+  calcRenderArticuloInfo();
   calcActualizarResultado();
 }
 
-function calcCambiarProducto() {
-  calcProductoSeleccionado = null;
-  document.getElementById('calcProductoElegido').hidden = true;
-  document.getElementById('calcProductoSelector').hidden = false;
-  calcActualizarResultado();
-}
-
-// Cierra la lista de resultados al tocar/clickear afuera (mismo patrón que el
-// dropdown de categorías de Precios, ver js/lista-precios.js)
-document.addEventListener('click', e => {
-  const cont = document.getElementById('calcProductoResultados');
-  const selector = document.getElementById('calcProductoSelector');
-  if (cont && !cont.hidden && selector && !selector.contains(e.target)) cont.hidden = true;
-});
-
-function calcRenderProductoElegido() {
-  const wrap = document.getElementById('calcProductoElegido');
+function calcRenderArticuloInfo() {
+  const wrap = document.getElementById('calcArticuloInfo');
   if (!wrap) return;
-  const d = calcProductoSeleccionado;
-  if (!d) { wrap.hidden = true; return; }
+  const m = calcArticuloSeleccionado;
+  if (!m) { wrap.hidden = true; wrap.innerHTML = ''; return; }
 
-  const esCaja = d.m2_por_caja != null;
-  const presentacion = esCaja
-    ? `📦 ${esc(d.notas || 'Caja')} — caja cubre ${formatM2(d.m2_por_caja)}`
-    : `📐 ${esc(d.notas || 'Unidad')} — cubre ${formatM2(d.m2_por_unidad)} por unidad`;
-
-  wrap.innerHTML = `
-    <div class="calc-producto-elegido-codigo">${esc(d.lista_precios_codigo)} · ${esc(d.lista_precios_proveedor)}</div>
-    <div class="calc-producto-elegido-desc">${esc(d.lp.descripcion)}</div>
-    <div class="calc-producto-elegido-presentacion">${presentacion}</div>
-    <button type="button" class="calc-producto-elegido-cambiar" onclick="calcCambiarProducto()">Cambiar producto</button>
-  `;
+  let html = `<div class="calc-articulo-info-linea">📐 Tira de ${esc(m.ancho_mm)}mm × ${esc(m.largo_mm)}mm — cubre ${formatM2(m.m2_por_unidad)} por unidad</div>`;
+  if (m.unidades_por_caja) {
+    html += `<div class="calc-articulo-info-linea">📦 Caja de ${m.unidades_por_caja} unidades cubre ${formatM2(m.m2_por_unidad * m.unidades_por_caja)}</div>`;
+  }
+  if (m.notas) html += `<div class="calc-articulo-info-notas">${esc(m.notas)}</div>`;
+  wrap.innerHTML = html;
   wrap.hidden = false;
 }
 
-// ── PASO 2: MEDIDAS DEL ESPACIO ──────────────────────────────────────────────
+// PASO 2: superficie a cubrir
 function calcOnModoChange() {
   const modo = document.querySelector('input[name="calcModo"]:checked')?.value || 'dimensiones';
   const elDim = document.getElementById('calcModoDimensiones');
@@ -178,11 +286,7 @@ function calcM2Base() {
   return Math.max(0, ancho * alto - descuento);
 }
 
-function formatM2(n) {
-  return (Math.round((n || 0) * 100) / 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' m²';
-}
-
-// ── PASO 3 + 4: DESPERDICIO Y RESULTADO (todo se recalcula junto, en tiempo real) ──
+// PASO 3 + 4: desperdicio y resultado (todo se recalcula junto, en tiempo real)
 function calcFila(label, valor) {
   return `<div class="calc-fila"><span class="calc-fila-label">${label}</span><span class="calc-fila-valor">${valor}</span></div>`;
 }
@@ -205,97 +309,54 @@ function calcActualizarResultado() {
     textoDesperdicio.textContent = desperdicioActivo && m2base > 0 ? `M² con desperdicio: ${formatM2(m2final)}` : '';
   }
 
-  const panel  = document.getElementById('calcResultadoPanel');
-  const btnWrap = document.getElementById('calcAgregarVentaWrap');
+  const panel = document.getElementById('calcResultadoPanel');
+  const btnWrap = document.getElementById('calcAgregarPresupuestoWrap');
   if (!panel) return;
 
-  if (!calcProductoSeleccionado) {
-    panel.innerHTML = `<div class="empty-state"><span class="icon">🧮</span><p>Elegí un producto para ver el resultado</p></div>`;
+  const m = calcArticuloSeleccionado;
+  if (!m) {
+    panel.innerHTML = `<div class="empty-state"><span class="icon">🧮</span><p>Elegí un artículo para ver el resultado</p></div>`;
     if (btnWrap) btnWrap.hidden = true;
     calcUltimoResultado = null;
     return;
   }
-  if (m2base <= 0) {
-    panel.innerHTML = `<div class="empty-state"><span class="icon">📏</span><p>Ingresá las medidas del espacio</p></div>`;
+  if (m2final <= 0) {
+    panel.innerHTML = `<div class="empty-state"><span class="icon">📏</span><p>Ingresá la superficie a cubrir</p></div>`;
     if (btnWrap) btnWrap.hidden = true;
     calcUltimoResultado = null;
     return;
   }
 
-  const d  = calcProductoSeleccionado;
-  const lp = d.lp;
-  const esCaja  = d.m2_por_caja != null;
-  // Caso especial (cielorrasos MAXIPLACAS, PVC Simil Marmol, etc.): precio_sin_iva
-  // es precio POR M², no por unidad/caja — independiente de si además se vende
-  // por caja (ver notas de dimensiones_productos, p. ej. id 20: tiene m2_por_caja
-  // Y "Precio x M2" a la vez).
-  const esPorM2 = /precio\s*x\s*m2/i.test(d.notas || '');
-
-  let cantidad, filasCantidad;
+  const esCaja = m.unidades_por_caja != null;
+  let cantidad, m2Cubiertos, filaExtra = '';
   if (esCaja) {
-    cantidad = Math.ceil(m2final / d.m2_por_caja);
-    const m2Cubiertos = cantidad * d.m2_por_caja;
-    filasCantidad = calcFila('Cajas necesarias', `${cantidad} caja${cantidad === 1 ? '' : 's'}`)
-      + calcFila('M² que cubren esas cajas', formatM2(m2Cubiertos))
-      + calcFila('M² sobrantes', formatM2(m2Cubiertos - m2final));
+    const m2PorCaja = m.m2_por_unidad * m.unidades_por_caja;
+    cantidad = Math.ceil(m2final / m2PorCaja);
+    const unidadesTotales = cantidad * m.unidades_por_caja;
+    m2Cubiertos = cantidad * m2PorCaja;
+    filaExtra = calcFila('Unidades totales', `${cantidad} caja${cantidad === 1 ? '' : 's'} × ${m.unidades_por_caja} = ${unidadesTotales} unidades`);
   } else {
-    cantidad = Math.ceil(m2final / d.m2_por_unidad);
-    filasCantidad = calcFila('Unidades necesarias', `${cantidad} unidad${cantidad === 1 ? '' : 'es'}`);
+    cantidad = Math.ceil(m2final / m.m2_por_unidad);
+    m2Cubiertos = cantidad * m.m2_por_unidad;
   }
-
-  let totalSinIva, totalConIva, filaPrecio;
-  if (esPorM2) {
-    totalSinIva = m2final * lp.precio_sin_iva;
-    totalConIva = m2final * lp.precio_con_iva;
-    filaPrecio = calcFila('Precio por m²', `${formatPrecio(lp.precio_sin_iva)} s/IVA · ${formatPrecio(lp.precio_con_iva)} c/IVA`);
-  } else {
-    totalSinIva = cantidad * lp.precio_sin_iva;
-    totalConIva = cantidad * lp.precio_con_iva;
-    filaPrecio = calcFila(esCaja ? 'Precio por caja' : 'Precio por unidad', `${formatPrecio(lp.precio_sin_iva)} s/IVA · ${formatPrecio(lp.precio_con_iva)} c/IVA`);
-  }
+  const sobrante = m2Cubiertos - m2final;
 
   panel.innerHTML = `
     ${calcFila('M² a cubrir', desperdicioActivo ? `${formatM2(m2base)} → ${formatM2(m2final)} con desperdicio` : formatM2(m2base))}
-    ${filasCantidad}
-    ${filaPrecio}
-    <div class="calc-total-row">
-      <span class="calc-total-label">Precio total s/IVA</span>
-      <span class="calc-total-valor">${formatPrecio(totalSinIva)}</span>
+    <div class="calc-resultado-cantidad">
+      <span class="calc-resultado-cantidad-num">${cantidad}</span>
+      <span class="calc-resultado-cantidad-label">${esCaja ? (cantidad === 1 ? 'caja necesaria' : 'cajas necesarias') : (cantidad === 1 ? 'unidad necesaria' : 'unidades necesarias')}</span>
     </div>
-    <div class="calc-total-row calc-total-row-principal">
-      <span class="calc-total-label">Precio total c/IVA</span>
-      <span class="calc-total-valor calc-total-valor-principal">${formatPrecio(totalConIva)}</span>
-    </div>
+    ${filaExtra}
+    ${calcFila(esCaja ? 'M² que cubren esas cajas' : 'M² que cubren esas unidades', formatM2(m2Cubiertos))}
+    ${calcFila('M² sobrantes', formatM2(sobrante))}
   `;
 
-  calcUltimoResultado = { cantidad, esCaja };
-
-  // "Agregar a venta" solo si este producto (por código) también está en
-  // stock_revestimientos — son catálogos distintos (lista de precios vs. stock
-  // físico por proveedor), así que no siempre va a estar.
-  const stockItem = typeof getVentaStockItems === 'function'
-    ? getVentaStockItems().find(i => (i.codigo || '').toLowerCase() === (d.lista_precios_codigo || '').toLowerCase())
-    : null;
-  if (btnWrap) {
-    btnWrap.hidden = !stockItem;
-    if (stockItem) {
-      const unidad = esCaja ? (cantidad === 1 ? 'caja' : 'cajas') : (cantidad === 1 ? 'unidad' : 'unidades');
-      const btn = document.getElementById('calcAgregarVentaBtn');
-      if (btn) { btn.textContent = `Agregar ${cantidad} ${unidad} a venta`; btn.dataset.stockId = stockItem.id; }
-    }
-  }
+  calcUltimoResultado = { cantidad, esCaja, nombre: m.nombre };
+  if (btnWrap) btnWrap.hidden = false;
 }
 
-async function calcAgregarAVenta() {
-  const btn = document.getElementById('calcAgregarVentaBtn');
-  const stockId = parseInt(btn?.dataset.stockId);
-  if (!calcUltimoResultado || !stockId) return;
-
-  const antes = carrito['stock_' + stockId]?.cantidad || 0;
-  await switchModule('revestimientos');
-  switchRevestSubview('ventas');
-  for (let i = 0; i < calcUltimoResultado.cantidad; i++) addToCart(stockId);
-  const despues = carrito['stock_' + stockId]?.cantidad || 0;
-
-  if (despues > antes) showToast(`${despues - antes} ${calcUltimoResultado.esCaja ? 'cajas' : 'unidades'} agregadas al carrito`, 'success');
+function calcAgregarAlPresupuesto() {
+  if (!calcUltimoResultado) return;
+  window.agregarItemPresupuesto(calcUltimoResultado.nombre, calcUltimoResultado.cantidad, null);
 }
