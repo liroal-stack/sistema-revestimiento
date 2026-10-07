@@ -1709,6 +1709,27 @@ tr.busqueda-global-flash { animation: busquedaGlobalFlash 1.6s ease; }
 .presupuesto-btn-email { background: #EA4335; color: #fff; box-shadow: 0 2px 8px rgba(234,67,53,0.3); }
 .presupuesto-btn-email:hover { background: #C5271B; }
 
+/* ── MODAL: instrucciones para enviar el Presupuesto por WhatsApp (tras PDF) ──
+   A diferencia de los demás .modal-overlay del sistema (bottom-sheet full-width
+   en mobile), este queda siempre centrado como un diálogo chico — por eso se
+   pisa con un selector de ID (gana sin depender del orden en la hoja de estilos). */
+#presupuestoWhatsappModal { align-items: center; padding: 20px; }
+.presupuesto-wa-modal { position: relative; border-radius: 12px; max-width: 420px; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,0.18); animation: modalIn 0.2s ease; }
+@media (max-width: 539px) { .presupuesto-wa-modal { width: 90%; border-radius: 12px; } }
+.presupuesto-wa-close {
+  position: absolute; top: 10px; right: 10px; background: none; border: none;
+  color: var(--gray-300); font-size: 20px; cursor: pointer; padding: 4px 8px; line-height: 1;
+  touch-action: manipulation; z-index: 1;
+}
+.presupuesto-wa-close:hover { color: var(--gray-700); }
+.presupuesto-wa-modal-body { padding: 32px 24px 8px; text-align: center; }
+.presupuesto-wa-icon { margin-bottom: 14px; display: flex; justify-content: center; }
+.presupuesto-wa-titulo { font-family: var(--font-display); font-weight: 900; font-size: 16px; color: var(--gray-900); margin-bottom: 14px; }
+.presupuesto-wa-texto { font-size: 14px; color: var(--gray-700); margin: 0 0 8px; line-height: 1.5; }
+.presupuesto-wa-pasos { text-align: left; font-size: 14px; color: var(--gray-700); margin: 6px 0 4px; padding-left: 22px; display: inline-block; line-height: 1.7; }
+.presupuesto-wa-pasos li { margin-bottom: 2px; }
+.presupuesto-wa-modal-footer { justify-content: center; }
+
 @media (max-width: 1024px) {
   .presupuesto-hoja { padding: 20px; }
   .presupuesto-titulo { font-size: 22px; }

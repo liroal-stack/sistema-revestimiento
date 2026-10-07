@@ -1253,6 +1253,30 @@
   </div>
 </div>
 
+<!-- MODAL: instrucciones para enviar el Presupuesto por WhatsApp (tras descargar el PDF) -->
+<div class="modal-overlay" id="presupuestoWhatsappModal">
+  <div class="modal presupuesto-wa-modal">
+    <button class="presupuesto-wa-close" onclick="closeModal('presupuestoWhatsappModal')" aria-label="Cerrar">✕</button>
+    <div class="modal-body presupuesto-wa-modal-body">
+      <div class="presupuesto-wa-icon">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.33A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.63 0-3.16-.44-4.47-1.21l-.32-.19-3.31.87.88-3.22-.21-.33A7.94 7.94 0 0 1 4 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8zm4.38-5.6c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1-.37-1.9-1.17-.7-.62-1.17-1.39-1.31-1.63-.14-.24-.01-.37.11-.49.12-.12.27-.3.4-.46.13-.15.17-.26.26-.43.09-.17.04-.32-.04-.45-.08-.12-.6-1.45-.83-1.98-.22-.5-.44-.43-.6-.44h-.52c-.17 0-.44.06-.68.32-.24.26-.91.89-.91 2.17s.93 2.52 1.06 2.69c.13.17 1.8 2.75 4.37 3.75 2.57 1 2.57.67 3.03.63.46-.04 1.43-.58 1.63-1.15.2-.57.2-1.05.14-1.15-.06-.1-.23-.16-.47-.28z"/></svg>
+      </div>
+      <div class="presupuesto-wa-titulo">📱 PDF descargado correctamente</div>
+      <p class="presupuesto-wa-texto">Tu presupuesto fue guardado en tu carpeta de Descargas.</p>
+      <p class="presupuesto-wa-texto">Para enviarlo por WhatsApp:</p>
+      <ol class="presupuesto-wa-pasos">
+        <li>Abrí la conversación con tu cliente</li>
+        <li>Tocá el ícono de adjuntar 📎</li>
+        <li>Seleccioná el PDF desde Descargas</li>
+      </ol>
+    </div>
+    <div class="modal-footer presupuesto-wa-modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('presupuestoWhatsappModal')">Cerrar</button>
+      <button type="button" class="btn presupuesto-btn-whatsapp" onclick="presupuestoAbrirWhatsappDesdeModal()">Abrir WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <!-- PDF PREVIEW -->
 <div id="pdfOverlay">
   <div class="pdf-modal">

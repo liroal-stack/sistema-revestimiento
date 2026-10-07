@@ -179,11 +179,58 @@ function presupuestoArmarMensajeFormal() {
     `Quedamos a disposición por cualquier consulta.\n\nSaludos cordiales,\nMM Espacios`;
 }
 
-function presupuestoEnviarWhatsapp() {
-  if (!presupuestoItemsCargados().length) { showToast('Cargá al menos un ítem con cantidad y precio', 'error'); return; }
+// Mensaje para el flujo de WhatsApp con PDF: se manda el PDF como adjunto a
+// mano (WhatsApp Web no permite adjuntar archivos por URL), así que el texto
+// avisa que el PDF "ya fue enviado" asumiendo que el usuario lo acaba de
+// adjuntar siguiendo las instrucciones del modal.
+function presupuestoArmarMensajeWhatsappConPdf() {
+  const fecha = document.getElementById('presupuestoFecha')?.value || '';
+  const cliente = document.getElementById('presupuestoCliente')?.value.trim() || '—';
+  const lineas = presupuestoItemsCargados().map(f =>
+    `${f.detalle || '(sin descripción)'}: ${f.cantidad} u. - ${formatPrecio(presupuestoCalcularSubtotal(f))}`
+  );
+  const totales = presupuestoIncluyeIva()
+    ? `TOTAL s/IVA: ${formatPrecio(presupuestoCalcularTotalSinIva())}\nTOTAL c/IVA: ${formatPrecio(presupuestoCalcularTotalConIva())}`
+    : `TOTAL: ${formatPrecio(presupuestoCalcularTotalSinIva())}`;
+  return `Hola! Te comparto el presupuesto de MM Espacios 📋\nCliente: ${cliente}\nFecha: ${fecha}\n${lineas.join('\n')}\n${totales}\nEl PDF ya fue enviado como archivo adjunto ✅`;
+}
+
+// Flujo de 2 pasos: 1) genera y descarga el PDF (nombre con prefijo "MM",
+// distinto al de "Generar PDF" para no confundir ambas descargas), 2) muestra
+// el modal con las instrucciones para adjuntarlo a mano en WhatsApp.
+async function presupuestoEnviarWhatsapp() {
+  if (!presupuestoItemsCargados().length) {
+    showToast('Completá al menos un ítem del presupuesto antes de enviar', 'error');
+    return;
+  }
+
+  const clienteNombre = document.getElementById('presupuestoCliente')?.value.trim() || '';
+  if (!clienteNombre) showToast('No ingresaste el nombre del cliente, se envía igual', 'info');
+
+  setLoading(true);
+  let pdf;
+  try {
+    pdf = await presupuestoCrearPdf();
+  } finally {
+    setLoading(false);
+  }
+  if (!pdf) return; // presupuestoCrearPdf ya mostró el toast de error correspondiente
+
+  const clienteArchivo = presupuestoSanitizarParaArchivo(clienteNombre);
+  pdf.save(clienteArchivo ? `Presupuesto_MM_${clienteArchivo}_${today()}.pdf` : `Presupuesto_MM_${today()}.pdf`);
+
+  presupuestoAbrirModalWhatsapp();
+}
+
+function presupuestoAbrirModalWhatsapp() {
+  document.getElementById('presupuestoWhatsappModal')?.classList.add('active');
+}
+
+function presupuestoAbrirWhatsappDesdeModal() {
   const telefono = (document.getElementById('presupuestoTelefono')?.value || '').replace(/\D/g, '');
-  const url = (telefono ? `https://wa.me/54${telefono}` : 'https://wa.me/') + '?text=' + encodeURIComponent(presupuestoArmarMensaje());
+  const url = (telefono ? `https://wa.me/54${telefono}` : 'https://wa.me/') + '?text=' + encodeURIComponent(presupuestoArmarMensajeWhatsappConPdf());
   window.open(url, '_blank', 'noopener');
+  closeModal('presupuestoWhatsappModal');
 }
 
 function presupuestoEnviarEmail() {
@@ -195,31 +242,49 @@ function presupuestoEnviarEmail() {
 }
 
 // ── PDF (jsPDF + html2canvas, ver CDN en index.html) ─────────────────────────
-async function presupuestoGenerarPDF() {
+// saca acentos antes de limpiar, si no "Pérez" queda "P_rez" en vez de "Perez"
+function presupuestoSanitizarParaArchivo(texto) {
+  return (texto || '').trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+}
+
+// Captura la hoja y devuelve el objeto jsPDF ya armado (sin guardar todavía)
+// — lo comparten "Generar PDF" y el flujo de WhatsApp, que solo difieren en
+// el nombre de archivo con el que lo terminan guardando.
+async function presupuestoCrearPdf() {
   const jsPDFCtor = window.jspdf?.jsPDF;
   if (!jsPDFCtor || !window.html2canvas) {
     showToast('No se pudo cargar el generador de PDF. Revisá tu conexión', 'error');
-    return;
+    return null;
   }
   const hoja = document.getElementById('presupuestoHoja');
-  if (!hoja) return;
+  if (!hoja) return null;
 
-  setLoading(true);
   hoja.classList.add('presupuesto-capturando'); // oculta las "✕" de borrar fila y los bordes de los inputs en la captura
   try {
     const canvas = await html2canvas(hoja, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
     const img = canvas.toDataURL('image/png');
     const pdf = new jsPDFCtor({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
     pdf.addImage(img, 'PNG', 0, 0, canvas.width, canvas.height);
-    const cliente = (document.getElementById('presupuestoCliente')?.value.trim() || 'presupuesto')
-      .normalize('NFD').replace(/[̀-ͯ]/g, '') // saca acentos antes de limpiar, si no "Pérez" queda "P_rez" en vez de "Perez"
-      .replace(/[^a-z0-9]+/gi, '_');
-    pdf.save(`Presupuesto_${cliente}_${today()}.pdf`);
+    return pdf;
   } catch (e) {
     console.error(e);
     showToast('Error al generar el PDF', 'error');
+    return null;
   } finally {
     hoja.classList.remove('presupuesto-capturando');
+  }
+}
+
+async function presupuestoGenerarPDF() {
+  setLoading(true);
+  try {
+    const pdf = await presupuestoCrearPdf();
+    if (!pdf) return;
+    const cliente = presupuestoSanitizarParaArchivo(document.getElementById('presupuestoCliente')?.value) || 'presupuesto';
+    pdf.save(`Presupuesto_${cliente}_${today()}.pdf`);
+  } finally {
     setLoading(false);
   }
 }
