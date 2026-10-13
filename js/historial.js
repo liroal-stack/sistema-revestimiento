@@ -115,13 +115,6 @@ function auditBuscar() {
   cargarAuditoria();
 }
 
-function auditLimpiar() {
-  resetAuditFiltrosUI();
-  auditFiltros = leerAuditFiltros();
-  auditPagina = 0;
-  cargarAuditoria();
-}
-
 function auditPaginaCambiar(delta) {
   const nueva = auditPagina + delta;
   if (nueva < 0 || (delta > 0 && !auditHayMas)) return;
